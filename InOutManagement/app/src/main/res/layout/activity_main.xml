@@ -16,7 +16,7 @@
         android:gravity="center"
         android:text="Wi-fi / Bluetooth 정보"
         android:textSize="20sp"
-        android:textColor="@android:color/black"/>
+        android:textColor="@android:color/black" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -28,13 +28,13 @@
             android:id="@+id/wifiBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Wi-fi"/>
+            android:text="Wi-fi" />
 
         <Button
             android:id="@+id/bluetoothBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Bluetooth"/>
+            android:text="Bluetooth" />
 
     </LinearLayout>
 
@@ -50,14 +50,14 @@
                 android:id="@+id/wifiInfo"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:text="Wi-fi Information"/>
+                android:text="Wi-fi Information" />
 
             <TextView
                 android:id="@+id/bluetoothInfo"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:text="Bluetooth Information"
-                android:visibility="invisible"/>
+                android:visibility="invisible" />
 
         </FrameLayout>
 
