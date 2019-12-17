@@ -9,13 +9,12 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-
 import androidx.core.app.ActivityCompat;
 
 public class MainActivity extends Activity {
 
     Button wifiBtn, bluetoothBtn;
-    TextView wifiInfo, bluetoothInfo;
+    TextView info;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,29 +23,37 @@ public class MainActivity extends Activity {
 
         wifiBtn = findViewById(R.id.wifiBtn);
         bluetoothBtn = findViewById(R.id.bluetoothBtn);
-        wifiInfo = findViewById(R.id.wifiInfo);
-        bluetoothInfo = findViewById(R.id.bluetoothInfo);
+        info = findViewById(R.id.info);
+
+        checkWifiPermission();
 
         wifiBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                wifiInfo.setVisibility(View.VISIBLE);
-                bluetoothInfo.setVisibility(View.INVISIBLE);
+                getWifiInformation();
             }
         });
 
         bluetoothBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                wifiInfo.setVisibility(View.INVISIBLE);
-                bluetoothInfo.setVisibility(View.VISIBLE);
+                getBluetoothInformation();
             }
         });
+    }
 
-        // Wi-fi
+    /**
+     * checkWifiPermission()
+     */
+    private void checkWifiPermission() {
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 1);
+    }
 
+    /**
+     * getWifiInformation()
+     */
+    private void getWifiInformation() {
         WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
         int ip = wifiManager.getConnectionInfo().getIpAddress();
@@ -59,7 +66,13 @@ public class MainActivity extends Activity {
                 + "\nNetworkId: " + wifiManager.getConnectionInfo().getNetworkId()
                 + "\nRssi: " + wifiManager.getConnectionInfo().getRssi();
 
-        wifiInfo.setText(wifiInfoText);
+        info.setText(wifiInfoText);
     }
 
+    /**
+     * getBluetoothInformation()
+     */
+    private void getBluetoothInformation() {
+        info.setText("bluetooth 클릭");
+    }
 }

@@ -42,24 +42,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <FrameLayout
+        <TextView
+            android:id="@+id/info"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <TextView
-                android:id="@+id/wifiInfo"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="Wi-fi Information" />
-
-            <TextView
-                android:id="@+id/bluetoothInfo"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="Bluetooth Information"
-                android:visibility="invisible" />
-
-        </FrameLayout>
+            android:layout_height="match_parent" />
 
     </ScrollView>
 
