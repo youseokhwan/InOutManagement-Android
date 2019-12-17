@@ -45,7 +45,8 @@
         <TextView
             android:id="@+id/info"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:textColor="@android:color/black" />
 
     </ScrollView>
 
