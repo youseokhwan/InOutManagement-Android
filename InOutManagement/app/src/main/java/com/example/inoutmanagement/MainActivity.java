@@ -9,7 +9,10 @@ import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,10 +22,12 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 
 import java.util.Calendar;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -38,6 +43,8 @@ public class MainActivity extends Activity {
 
     Intent detectWifiIntent;
     ComponentName service;
+
+    WifiInfo currentWifi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +62,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 getWifiInformation();
+                getWifiList();
             }
         });
 
@@ -68,13 +76,13 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
-        service = startService(detectWifiIntent);
+//        service = startService(detectWifiIntent);
         super.onPause();
     }
 
     @Override
     protected void onRestart() {
-        stopService(new Intent(this, service.getClass()));
+//        stopService(new Intent(this, service.getClass()));
         super.onRestart();
     }
 
@@ -89,23 +97,38 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 기기에 연결된 Wi-fi에 대한 정보를 TextView에 디스플레이
+     * 기기에 연결된 Wi-fi에 대한 정보 currentWifi 변수에 저장하고 TextView에 디스플레이
      */
     public void getWifiInformation() {
         WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
-        // int형 ip값을 IPv4 형태로 변경
-        int ip = wifiManager.getConnectionInfo().getIpAddress();
-        String ipAddress = String.format("%d.%d.%d.%d", (ip & 0xff), (ip >> 8&0xff), (ip >> 16&0xff), (ip >> 24&0xff));
+        currentWifi = new WifiInfo(wifiManager.getConnectionInfo());
+        info.setText(currentTime() + "\n\n" + currentWifi.toString());
+    }
 
-        String wifiInfo = "SSID: " + wifiManager.getConnectionInfo().getSSID()
-                + "\nBSSID: " + wifiManager.getConnectionInfo().getBSSID()
-                + "\nIpAddress: " + ipAddress
-                + "\nLinkSpeed: " + wifiManager.getConnectionInfo().getLinkSpeed()
-                + "\nNetworkId: " + wifiManager.getConnectionInfo().getNetworkId()
-                + "\nRssi: " + wifiManager.getConnectionInfo().getRssi();
+    /**
+     * Wi-fi 목록을 TextView에 디스플레이
+     */
+    public void getWifiList() {
+        WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        List<ScanResult> scanResults = wifiManager.getScanResults();
 
-        info.setText(currentTime() + "\n\n" + wifiInfo);
+        // 검색된 Wi-fi의 개수 출력
+        String wifiList = "[검색된 Wi-fi 리스트] - " + scanResults.size() + "개\n";
+
+        // 각 Wi-fi의 SSID 출력
+        for(ScanResult result : scanResults) {
+            String ssid = "\"" + result.SSID + "\"";
+
+            // 현재 연결된 Wi-fi와 같은 BSSID일 경우 강조
+            if(result.BSSID.equals(currentWifi.getBSSID())) {
+                ssid += "<- 현재 연결된 Wi-fi";
+            }
+
+            wifiList += "SSID: " + ssid + "\n";
+        }
+
+        info.setText(info.getText() + "\n\n" + wifiList);
     }
 
     /**
