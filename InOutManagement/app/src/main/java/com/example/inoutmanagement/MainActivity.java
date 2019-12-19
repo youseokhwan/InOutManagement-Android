@@ -26,9 +26,15 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 
+import com.google.gson.JsonArray;
+
 import java.util.Calendar;
 import java.util.List;
 import java.util.Set;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * 이탈 관리 및 에너지 정보 관리 App
@@ -38,7 +44,7 @@ import java.util.Set;
  */
 public class MainActivity extends Activity {
 
-    Button wifiBtn, bluetoothBtn;
+    Button wifiBtn, bluetoothBtn, getBtn;
     TextView info;
 
     Intent detectWifiIntent;
@@ -53,6 +59,7 @@ public class MainActivity extends Activity {
 
         wifiBtn = findViewById(R.id.wifiBtn);
         bluetoothBtn = findViewById(R.id.bluetoothBtn);
+        getBtn = findViewById(R.id.getBtn);
         info = findViewById(R.id.info);
         detectWifiIntent = new Intent(MainActivity.this, DetectWifi.class);
 
@@ -70,6 +77,13 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 getBluetoothInformation();
+            }
+        });
+
+        getBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                testGet();
             }
         });
     }
@@ -166,5 +180,36 @@ public class MainActivity extends Activity {
     private String currentTime() {
         Calendar calendar = Calendar.getInstance();
         return "요청 시간: " + calendar.getTime().toString();
+    }
+
+    /**
+     * testGet
+     */
+    private void testGet() {
+        RetrofitConnection retrofitConnection = new RetrofitConnection();
+        Call<JsonArray> call = retrofitConnection.server.getData();
+
+        call.enqueue(new Callback<JsonArray>() {
+            @Override
+            public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
+                if(response.isSuccessful()) {
+                    String content = "[Repository 목록]";
+
+                    for(int i = 0; i < response.body().size(); i++) {
+                        content += "\n" + (i+1) + ". " + response.body().get(i).getAsJsonObject().get("name").getAsString();
+                    }
+
+                    info.setText(currentTime() + "\n\n" + content);
+                }
+                else {
+                    info.setText(currentTime() + "\n\n" + "데이터 전송 오류!");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonArray> call, Throwable t) {
+                info.setText(currentTime() + "\n\n" + "서버 연결 오류!!");
+            }
+        });
     }
 }

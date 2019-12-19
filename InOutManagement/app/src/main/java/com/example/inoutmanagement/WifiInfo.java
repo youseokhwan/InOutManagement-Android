@@ -2,17 +2,11 @@ package com.example.inoutmanagement;
 
 public class WifiInfo {
     private String ssid;
-    public String getSSID() {
-        return ssid;
-    }
-    public void setSSID(String ssid) {
-        this.ssid = ssid;
-    }
+    public String getSSID() { return ssid; }
+    public void setSSID(String ssid) { this.ssid = ssid; }
 
     private String bssid;
-    public String getBSSID() {
-        return bssid;
-    }
+    public String getBSSID() { return bssid; }
     public void setBSSID(String bssid) {
         this.bssid = bssid;
     }
@@ -21,9 +15,7 @@ public class WifiInfo {
     public int getIpAddress() {
         return ipAddress;
     }
-    public void setIpAddress(int ipAddress) {
-        this.ipAddress = ipAddress;
-    }
+    public void setIpAddress(int ipAddress) { this.ipAddress = ipAddress; }
 
     private String ipv4;
     public String getIPv4() {
