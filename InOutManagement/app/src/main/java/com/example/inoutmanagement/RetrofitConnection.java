@@ -16,3 +16,4 @@ public class RetrofitConnection {
 
     RetrofitInterface server = retrofit.create(RetrofitInterface.class);
 }
+

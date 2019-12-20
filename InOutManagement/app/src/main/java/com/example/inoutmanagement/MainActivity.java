@@ -16,6 +16,10 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -128,21 +132,25 @@ public class MainActivity extends Activity {
         List<ScanResult> scanResults = wifiManager.getScanResults();
 
         // 검색된 Wi-fi의 개수 출력
-        String wifiList = "[검색된 Wi-fi 리스트] - " + scanResults.size() + "개\n";
+        info.append("\n\n[검색된 Wi-fi 리스트] - " + scanResults.size() + "개\n");
 
         // 각 Wi-fi의 SSID 출력
         for(ScanResult result : scanResults) {
             String ssid = "\"" + result.SSID + "\"";
 
-            // 현재 연결된 Wi-fi와 같은 BSSID일 경우 강조
+            // 현재 연결된 Wi-fi와 같은 BSSID일 경우 보라색으로 강조
             if(result.BSSID.equals(currentWifi.getBSSID())) {
-                ssid += "<- 현재 연결된 Wi-fi";
+                SpannableStringBuilder builder = new SpannableStringBuilder(ssid);
+                builder.setSpan(new ForegroundColorSpan(Color.parseColor("#5F00FF")), 0, ssid.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                info.append("SSID: ");
+                info.append(builder);
+                info.append("\n");
             }
-
-            wifiList += "SSID: " + ssid + "\n";
+            else {
+                info.append("SSID: " + ssid + "\n");
+            }
         }
-
-        info.setText(info.getText() + "\n\n" + wifiList);
     }
 
     /**
