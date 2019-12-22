@@ -258,14 +258,14 @@ public class MainActivity extends Activity {
                         Toast.makeText(getApplicationContext(), "Wi-Fi(" + currentWifi.getSSID() + ")에 연결되었습니다.", Toast.LENGTH_SHORT).show();
 //                        vibrator.vibrate(1000);
                     }
-//                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-//                        Toast.makeText(getApplicationContext(), "셀룰러 데이터로 연결되었습니다.", Toast.LENGTH_SHORT).show();
-//                    }
+                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                        Toast.makeText(getApplicationContext(), "셀룰러 데이터로 연결되었습니다.", Toast.LENGTH_SHORT).show();
+                    }
                 }
 
                 @Override
                 public void onLost(Network network) {
-//                    Toast.makeText(getApplicationContext(), "네트워크 연결이 중단되었습니다.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "네트워크 연결이 중단되었습니다.", Toast.LENGTH_SHORT).show();
                 }
             };
 
