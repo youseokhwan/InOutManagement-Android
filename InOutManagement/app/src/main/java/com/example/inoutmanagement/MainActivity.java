@@ -12,10 +12,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
+import android.net.NetworkRequest;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -56,6 +62,9 @@ public class MainActivity extends Activity {
 
     WifiInfo currentWifi;
 
+    ConnectivityManager.NetworkCallback networkCallback;
+//    Vibrator vibrator;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,13 +75,17 @@ public class MainActivity extends Activity {
         getBtn = findViewById(R.id.getBtn);
         info = findViewById(R.id.info);
         detectWifiIntent = new Intent(MainActivity.this, DetectWifi.class);
+//        vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
 
         checkWifiPermission();
+        startWifiChangeDetection();
 
         wifiBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 getWifiInformation();
+                info.setText(currentTime() + "\n\n" + currentWifi.toString());
+
                 getWifiList();
             }
         });
@@ -94,14 +107,21 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
-//        service = startService(detectWifiIntent);
         super.onPause();
+//        service = startService(detectWifiIntent);
+
     }
 
     @Override
     protected void onRestart() {
-//        stopService(new Intent(this, service.getClass()));
         super.onRestart();
+//        stopService(new Intent(this, service.getClass()));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopWifiChangeDetection();
     }
 
     /**
@@ -115,13 +135,11 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 기기에 연결된 Wi-fi에 대한 정보 currentWifi 변수에 저장하고 TextView에 디스플레이
+     * 기기에 연결된 Wi-fi에 대한 정보 currentWifi 변수에 저장
      */
     public void getWifiInformation() {
         WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-
         currentWifi = new WifiInfo(wifiManager.getConnectionInfo());
-        info.setText(currentTime() + "\n\n" + currentWifi.toString());
     }
 
     /**
@@ -191,7 +209,7 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * testGet
+     * Retrofit2 라이브러리를 이용하여 get 호출 예제 적용(GitHub Repository 목록 가져오기)
      */
     private void testGet() {
         RetrofitConnection retrofitConnection = new RetrofitConnection();
@@ -219,5 +237,54 @@ public class MainActivity extends Activity {
                 info.setText(currentTime() + "\n\n" + "서버 연결 오류!!");
             }
         });
+    }
+
+    /**
+     * 와이파이 상태 변경 감지 시작
+     */
+    private void startWifiChangeDetection() {
+        Toast.makeText(getApplicationContext(), "네트워크 상태 감지를 시작합니다.", Toast.LENGTH_SHORT).show();
+        final ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            NetworkRequest.Builder builder = new NetworkRequest.Builder();
+
+            networkCallback = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
+                    if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                        getWifiInformation();
+                        Toast.makeText(getApplicationContext(), "Wi-Fi(" + currentWifi.getSSID() + ")에 연결되었습니다.", Toast.LENGTH_SHORT).show();
+//                        vibrator.vibrate(1000);
+                    }
+//                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+//                        Toast.makeText(getApplicationContext(), "셀룰러 데이터로 연결되었습니다.", Toast.LENGTH_SHORT).show();
+//                    }
+                }
+
+                @Override
+                public void onLost(Network network) {
+//                    Toast.makeText(getApplicationContext(), "네트워크 연결이 중단되었습니다.", Toast.LENGTH_SHORT).show();
+                }
+            };
+
+            cm.registerNetworkCallback(builder.build(), networkCallback);
+        }
+        else {
+            Toast.makeText(getApplicationContext(), "지원하는 않는 API 버전입니다.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 와이파이 상태 변경 감지 종료
+     */
+    private void stopWifiChangeDetection() {
+        Toast.makeText(getApplicationContext(), "네트워크 상태 감지를 중단합니다.", Toast.LENGTH_SHORT).show();
+        ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            cm.unregisterNetworkCallback(networkCallback);
+        }
     }
 }
