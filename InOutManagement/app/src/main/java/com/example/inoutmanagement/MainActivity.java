@@ -3,11 +3,13 @@ package com.example.inoutmanagement;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
@@ -63,7 +65,7 @@ public class MainActivity extends Activity {
     WifiInfo currentWifi;
 
     ConnectivityManager.NetworkCallback networkCallback;
-//    Vibrator vibrator;
+    Vibrator vibrator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,10 +77,11 @@ public class MainActivity extends Activity {
         getBtn = findViewById(R.id.getBtn);
         info = findViewById(R.id.info);
         detectWifiIntent = new Intent(MainActivity.this, DetectWifi.class);
-//        vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+        vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
 
         checkWifiPermission();
         startWifiChangeDetection();
+//        createNotificationChannel();
 
         wifiBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -107,6 +110,8 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        Log.d("test", "onPause() 진입");
+
         super.onPause();
 //        service = startService(detectWifiIntent);
 
@@ -114,12 +119,16 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onRestart() {
+        Log.d("test", "onRestart() 진입");
+
         super.onRestart();
 //        stopService(new Intent(this, service.getClass()));
     }
 
     @Override
     protected void onDestroy() {
+        Log.d("test", "onDestroy() 진입");
+
         super.onDestroy();
         stopWifiChangeDetection();
     }
@@ -254,7 +263,8 @@ public class MainActivity extends Activity {
                 public void onAvailable(Network network) {
                     NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
                     if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                        getWifiInformation();
+                        do { getWifiInformation(); } while(currentWifi.getSSID().equals("<unknown ssid>"));
+                        Log.d("test", "Wi-Fi(" + currentWifi.getSSID() + ")에 연결되었습니다.");
                         Toast.makeText(getApplicationContext(), "Wi-Fi(" + currentWifi.getSSID() + ")에 연결되었습니다.", Toast.LENGTH_SHORT).show();
 //                        vibrator.vibrate(1000);
                     }
@@ -265,7 +275,17 @@ public class MainActivity extends Activity {
 
                 @Override
                 public void onLost(Network network) {
-                    Toast.makeText(getApplicationContext(), "네트워크 연결이 중단되었습니다.", Toast.LENGTH_SHORT).show();
+                    Log.d("test", "네트워크 연결이 중단되었습니다.");
+//                    Toast.makeText(getApplicationContext(), "네트워크 연결이 중단되었습니다.", Toast.LENGTH_SHORT).show();
+
+//                    NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+//                            .setContentTitle("제목")
+//                            .setContentText("내용")
+//                            .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+
+
+                    getWifiInformation();
                 }
             };
 
@@ -287,4 +307,19 @@ public class MainActivity extends Activity {
             cm.unregisterNetworkCallback(networkCallback);
         }
     }
+
+    /**
+     * Notification Channel
+     */
+//    private void createNotificationChannel() {
+//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            CharSequence name = "default";
+//            String description = "default channel";
+//            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+//            NotificationChannel channel = new NotificationChannel("default", name, importance);
+//            channel.setDescription(description);
+//            NotificationManager manager = getSystemService(NotificationManager.class);
+//            manager.createNotificationChannel(channel);
+//        }
+//    }
 }
