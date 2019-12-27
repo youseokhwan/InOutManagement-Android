@@ -59,13 +59,8 @@ public class MainActivity extends Activity {
     Button wifiBtn, bluetoothBtn, getBtn;
     TextView info;
 
-    Intent detectWifiIntent;
-    ComponentName service;
-
     WifiInfo currentWifi;
-
     ConnectivityManager.NetworkCallback networkCallback;
-    Vibrator vibrator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,12 +71,9 @@ public class MainActivity extends Activity {
         bluetoothBtn = findViewById(R.id.bluetoothBtn);
         getBtn = findViewById(R.id.getBtn);
         info = findViewById(R.id.info);
-        detectWifiIntent = new Intent(MainActivity.this, DetectWifi.class);
-        vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
 
         checkWifiPermission();
         startWifiChangeDetection();
-//        createNotificationChannel();
 
         wifiBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -108,27 +100,18 @@ public class MainActivity extends Activity {
         });
     }
 
-    @Override
-    protected void onPause() {
-        Log.d("test", "onPause() 진입");
-
-        super.onPause();
-//        service = startService(detectWifiIntent);
-
-    }
-
-    @Override
-    protected void onRestart() {
-        Log.d("test", "onRestart() 진입");
-
-        super.onRestart();
-//        stopService(new Intent(this, service.getClass()));
-    }
+//    @Override
+//    protected void onPause() {
+//        super.onPause();
+//    }
+//
+//    @Override
+//    protected void onRestart() {
+//        super.onRestart();
+//    }
 
     @Override
     protected void onDestroy() {
-        Log.d("test", "onDestroy() 진입");
-
         super.onDestroy();
         stopWifiChangeDetection();
     }
@@ -252,7 +235,6 @@ public class MainActivity extends Activity {
      * 와이파이 상태 변경 감지 시작
      */
     private void startWifiChangeDetection() {
-        Toast.makeText(getApplicationContext(), "네트워크 상태 감지를 시작합니다.", Toast.LENGTH_SHORT).show();
         final ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -264,27 +246,16 @@ public class MainActivity extends Activity {
                     NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
                     if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                         do { getWifiInformation(); } while(currentWifi.getSSID().equals("<unknown ssid>"));
-                        Log.d("test", "Wi-Fi(" + currentWifi.getSSID() + ")에 연결되었습니다.");
-                        Toast.makeText(getApplicationContext(), "Wi-Fi(" + currentWifi.getSSID() + ")에 연결되었습니다.", Toast.LENGTH_SHORT).show();
-//                        vibrator.vibrate(1000);
+                        createNotification("네트워크 알림", "Wi-Fi(" + currentWifi.getSSID() + ")에 연결되었습니다.");
                     }
                     else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-                        Toast.makeText(getApplicationContext(), "셀룰러 데이터로 연결되었습니다.", Toast.LENGTH_SHORT).show();
+                        createNotification("네트워크 알림", "셀룰러 데이터로 연결되었습니다.");
                     }
                 }
 
                 @Override
                 public void onLost(Network network) {
-                    Log.d("test", "네트워크 연결이 중단되었습니다.");
-//                    Toast.makeText(getApplicationContext(), "네트워크 연결이 중단되었습니다.", Toast.LENGTH_SHORT).show();
-
-//                    NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-//                            .setContentTitle("제목")
-//                            .setContentText("내용")
-//                            .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
-
-
+                    createNotification("네트워크 알림", "네트워크 연결이 중단되었습니다.");
                     getWifiInformation();
                 }
             };
@@ -292,7 +263,7 @@ public class MainActivity extends Activity {
             cm.registerNetworkCallback(builder.build(), networkCallback);
         }
         else {
-            Toast.makeText(getApplicationContext(), "지원하는 않는 API 버전입니다.", Toast.LENGTH_SHORT).show();
+            createNotification("시스템 알림", "지원하지 않는 API 버전입니다.");
         }
     }
 
@@ -300,7 +271,6 @@ public class MainActivity extends Activity {
      * 와이파이 상태 변경 감지 종료
      */
     private void stopWifiChangeDetection() {
-        Toast.makeText(getApplicationContext(), "네트워크 상태 감지를 중단합니다.", Toast.LENGTH_SHORT).show();
         ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -308,18 +278,22 @@ public class MainActivity extends Activity {
         }
     }
 
+
     /**
-     * Notification Channel
+     * Notification 띄우기
      */
-//    private void createNotificationChannel() {
-//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            CharSequence name = "default";
-//            String description = "default channel";
-//            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-//            NotificationChannel channel = new NotificationChannel("default", name, importance);
-//            channel.setDescription(description);
-//            NotificationManager manager = getSystemService(NotificationManager.class);
-//            manager.createNotificationChannel(channel);
-//        }
-//    }
+    private void createNotification(String title, String text) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "network")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationManager.createNotificationChannel(new NotificationChannel("network", "네트워크 알림", NotificationManager.IMPORTANCE_DEFAULT));
+        }
+
+        notificationManager.notify(1, builder.build());
+    }
 }

@@ -17,7 +17,7 @@ public interface RetrofitInterface {
     Call<JsonArray> getData();
 
     @POST("ccl/")
-    void postData(Call<JsonArray> data); // sdfsdfsdf
+    void postData(Call<JsonArray> data);
 
     @PUT("ccl/")
     void putData(Call<JsonArray> data);
