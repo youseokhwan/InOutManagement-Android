@@ -251,6 +251,21 @@ public class MainActivity extends Activity {
                     else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
                         createNotification("네트워크 알림", "셀룰러 데이터로 연결되었습니다.");
                     }
+                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
+                        createNotification("네트워크 알림", "유선랜으로 연결되었습니다.");
+                    }
+                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                        createNotification("네트워크 알림", "VPN으로 연결되었습니다.");
+                    }
+                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)) {
+                        createNotification("네트워크 알림", "블루투스 네트워크로 연결되었습니다.");
+                    }
+                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_LOWPAN)) {
+                        createNotification("네트워크 알림", "LoWPAN로 연결되었습니다.");
+                    }
+                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI_AWARE)) {
+                        createNotification("네트워크 알림", "Wifi Aware로 연결되었습니다.");
+                    }
                 }
 
                 @Override
