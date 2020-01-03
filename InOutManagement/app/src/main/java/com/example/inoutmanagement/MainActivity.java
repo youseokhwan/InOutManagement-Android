@@ -2,41 +2,30 @@ package com.example.inoutmanagement;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Vibrator;
-import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.gson.JsonArray;
 
@@ -72,9 +61,6 @@ public class MainActivity extends Activity {
         getBtn = findViewById(R.id.getBtn);
         info = findViewById(R.id.info);
 
-        checkWifiPermission();
-        startWifiChangeDetection();
-
         wifiBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -98,22 +84,54 @@ public class MainActivity extends Activity {
                 testGet();
             }
         });
+
+        // 위치 권한이 있을 경우 네트워크 감지 시작, 없을 경우 권한 요청
+        if(hasLocationPermission()) {
+            startNetworkDetection();
+        }
+        else {
+            requestLocationPermission();
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stopWifiChangeDetection();
+        stopNetworkDetection();
     }
 
     /**
-     * ACCESS_FINE_LOCATION 권한을 확인하고 없을 경우 요청
+     * 위치 권한 확인
+     * @return 권한 여부
      */
-    private void checkWifiPermission() {
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 1);
+    public boolean hasLocationPermission() {
+        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
 
-        // 권한 요청을 거부했을 때 대처해야 함
+        // 위치 권한이 있으면 true, 없으면 false를 반환
+        if(permissionCheck == PackageManager.PERMISSION_GRANTED)
+            return true;
+        else
+            return false;
+    }
+
+    /**
+     * 위치 권한 요청
+     */
+    public void requestLocationPermission() {
+        ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 1);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch(requestCode) {
+            case 1:
+                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startNetworkDetection();
+                }
+                else {
+                    info.setText("위치 권한을 허용해주세요.");
+                }
+        }
     }
 
     /**
@@ -222,9 +240,9 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 와이파이 상태 변경 감지 시작
+     * 네트워크 감지 및 Notification 생성
      */
-    private void startWifiChangeDetection() {
+    private void startNetworkDetection() {
         final ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -260,9 +278,9 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 와이파이 상태 변경 감지 종료
+     * 네트워크 감지 종료
      */
-    private void stopWifiChangeDetection() {
+    private void stopNetworkDetection() {
         ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -271,7 +289,7 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Notification 띄우기
+     * Notification
      */
     private void createNotification(String title, String text) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "network")
