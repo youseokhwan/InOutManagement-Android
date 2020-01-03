@@ -100,16 +100,6 @@ public class MainActivity extends Activity {
         });
     }
 
-//    @Override
-//    protected void onPause() {
-//        super.onPause();
-//    }
-//
-//    @Override
-//    protected void onRestart() {
-//        super.onRestart();
-//    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -235,7 +225,7 @@ public class MainActivity extends Activity {
      * 와이파이 상태 변경 감지 시작
      */
     private void startWifiChangeDetection() {
-        final ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        final ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             NetworkRequest.Builder builder = new NetworkRequest.Builder();
@@ -243,35 +233,22 @@ public class MainActivity extends Activity {
             networkCallback = new ConnectivityManager.NetworkCallback() {
                 @Override
                 public void onAvailable(Network network) {
-                    NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
-                    if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                        do { getWifiInformation(); } while(currentWifi.getSSID().equals("<unknown ssid>"));
-                        createNotification("네트워크 알림", "Wi-Fi(" + currentWifi.getSSID() + ")에 연결되었습니다.");
-                    }
-                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-                        createNotification("네트워크 알림", "셀룰러 데이터로 연결되었습니다.");
-                    }
-                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
-                        createNotification("네트워크 알림", "유선랜으로 연결되었습니다.");
-                    }
-                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-                        createNotification("네트워크 알림", "VPN으로 연결되었습니다.");
-                    }
-                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)) {
-                        createNotification("네트워크 알림", "블루투스 네트워크로 연결되었습니다.");
-                    }
-                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_LOWPAN)) {
-                        createNotification("네트워크 알림", "LoWPAN로 연결되었습니다.");
-                    }
-                    else if(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI_AWARE)) {
-                        createNotification("네트워크 알림", "Wifi Aware로 연결되었습니다.");
-                    }
-                }
+                    // 디바이스의 Wi-Fi 기능이 어떤 상태인지 확인하기 위한 WifiManager
+                    WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
-                @Override
-                public void onLost(Network network) {
-                    createNotification("네트워크 알림", "네트워크 연결이 중단되었습니다.");
-                    getWifiInformation();
+                    // 네트워크에 연결됐을 때 Wi-Fi 기능의 On/Off 여부로 네트워크 판단
+                    switch(wifiManager.getWifiState()) {
+                        case WifiManager.WIFI_STATE_DISABLED:
+                        case WifiManager.WIFI_STATE_DISABLING:
+                            createNotification("네트워크 알림", "외출: 셀룰러 데이터로 연결되었습니다.");
+                            break;
+                        case WifiManager.WIFI_STATE_ENABLED:
+                            getWifiInformation();
+                            createNotification("네트워크 알림", "판단해야함: Wi-fi(" + currentWifi.getSSID() + ")로 연결되었습니다.");
+                            break;
+                        default:
+                            createNotification("네트워크 알림", "오류가 발생하였습니다.");
+                    }
                 }
             };
 
@@ -286,13 +263,12 @@ public class MainActivity extends Activity {
      * 와이파이 상태 변경 감지 종료
      */
     private void stopWifiChangeDetection() {
-        ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             cm.unregisterNetworkCallback(networkCallback);
         }
     }
-
 
     /**
      * Notification 띄우기
@@ -304,11 +280,12 @@ public class MainActivity extends Activity {
                 .setContentText(text)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-        NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager notificationManager = (NotificationManager)getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             notificationManager.createNotificationChannel(new NotificationChannel("network", "네트워크 알림", NotificationManager.IMPORTANCE_DEFAULT));
         }
 
         notificationManager.notify(1, builder.build());
     }
+
 }
