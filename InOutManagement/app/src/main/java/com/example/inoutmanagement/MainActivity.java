@@ -96,28 +96,36 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 위치 권한 확인
-     * @return 권한 여부
+     * ACCESS_FINE_LOCATION 권한 확인
+     * 안드로이드 Q 이상인 경우 ACCESS_BACKGROUND_LOCATION 권한도 필요함
      */
     public void checkLocationPermission() {
         int foregroundPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
 
-        // foreground 권한이 있으면 background 권한도 있는지 확인, 없으면 foreground 권한 요청
+        // FINE 권한이 있는 경우 안드로이드 버전에 따라 분기
         if(foregroundPermission == PackageManager.PERMISSION_GRANTED) {
-            int backgroundPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+            // 안드로이드 10 이상인 경우 BACKGROUND 권한도 필요
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                int backgroundPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION);
 
-            // background 권한이 있으면 네트워크 감지 시작, 없으면 background 권한 요청
-            if(backgroundPermission == PackageManager.PERMISSION_GRANTED)
-                startNetworkDetection();
+                // BACKGROUND 권한이 있으면 네트워크 감지 시작, 없으면 권한 요청
+                if(backgroundPermission == PackageManager.PERMISSION_GRANTED)
+                    startNetworkDetection();
+                else
+                    ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, 2);
+            }
+            // 안드로이드 10 미만인 경우 네트워크 감지 시작
             else
-                ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, 2);
+                startNetworkDetection();
         }
+        // FINE 권한이 없는 경우 요청
         else
             ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 1);
     }
 
     /**
      * 위치 권한 요청에 대한 사용자 응답 처리
+     * 안드로이드 Q 이상인 경우 ACCESS_BACKGROUND_LOCATION 권한도 필요함
      * @param requestCode
      * @param permissions
      * @param grantResults
@@ -126,8 +134,14 @@ public class MainActivity extends Activity {
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch(requestCode) {
             case 1:
-                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-                    ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, 2);
+                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // 안드로이드 10 이상인 경우 BACKGROUND 권한도 필요
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 2);
+                    // 안드로이드 10 미만인 경우 네트워크 감지 시작
+                    else
+                        startNetworkDetection();
+                }
                 else
                     info.setText("위치 권한을 허용해주세요.");
                 break;
