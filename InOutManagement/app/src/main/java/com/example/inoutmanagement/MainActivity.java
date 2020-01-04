@@ -86,12 +86,15 @@ public class MainActivity extends Activity {
             }
         });
 
+        // 위치 권한 확인
         checkLocationPermission();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        // 네트워크 감지 중단
         stopNetworkDetection();
     }
 
@@ -108,9 +111,10 @@ public class MainActivity extends Activity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 int backgroundPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION);
 
-                // BACKGROUND 권한이 있으면 네트워크 감지 시작, 없으면 권한 요청
+                // BACKGROUND 권한이 있으면 네트워크 감지 시작
                 if(backgroundPermission == PackageManager.PERMISSION_GRANTED)
                     startNetworkDetection();
+                // BACKGROUND 권한이 없으면 요청
                 else
                     ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, 2);
             }
@@ -134,6 +138,7 @@ public class MainActivity extends Activity {
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch(requestCode) {
             case 1:
+                // FINE 권한이 허용된 경우 안드로이드 버전에 따라 분기
                 if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // 안드로이드 10 이상인 경우 BACKGROUND 권한도 필요
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
@@ -142,12 +147,16 @@ public class MainActivity extends Activity {
                     else
                         startNetworkDetection();
                 }
+                // FINE 권한이 거부된 경우 TextView 수정
                 else
                     info.setText("위치 권한을 허용해주세요.");
                 break;
+
             case 2:
+                // BACKGROUND 권한이 허용된 경우 네트워크 감지 시작
                 if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
                     startNetworkDetection();
+                // BACKGROUND 권한이 거부된 경우 TextView 수정
                 else
                     info.setText("위치 권한을 '앱 사용 중에만 허용'에서 '항상 허용'으로 바꿔주세요.");
                 break;
@@ -265,6 +274,7 @@ public class MainActivity extends Activity {
     private void startNetworkDetection() {
         final ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
+        // 마시멜로 버전 이상일 경우
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             NetworkRequest.Builder builder = new NetworkRequest.Builder();
 
@@ -274,16 +284,20 @@ public class MainActivity extends Activity {
                     // 디바이스의 Wi-Fi 기능이 어떤 상태인지 확인하기 위한 WifiManager
                     WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
-                    // 네트워크에 연결됐을 때 Wi-Fi 기능의 On/Off 여부로 네트워크 판단
+                    // 네트워크에 연결됐을 때 Wi-Fi 기능의 On/Off 상태 여부로 네트워크 판단
                     switch(wifiManager.getWifiState()) {
+                        // Wi-Fi가 꺼져있거나 꺼지는 중이지만 네트워크가 연결된 경우 셀룰러 데이터로 연결된 경우라고 가정
                         case WifiManager.WIFI_STATE_DISABLED:
                         case WifiManager.WIFI_STATE_DISABLING:
                             createNotification("네트워크 알림", "외출: 셀룰러 데이터로 연결되었습니다.");
                             break;
+
+                        // Wi-Fi가 켜져있는 경우 셀룰러 데이터보다 우선권을 가지기 때문에 셀룰러 데이터 연결 여부에 상관없이 Wi-Fi로 연결되었다고 판단
                         case WifiManager.WIFI_STATE_ENABLED:
                             getWifiInformation();
-                            createNotification("네트워크 알림", "판단해야함: Wi-fi(" + currentWifi.getSSID() + ")로 연결되었습니다.");
+                            createNotification("네트워크 알림", "외출/귀가 판단: Wi-fi(" + currentWifi.getSSID() + ")로 연결되었습니다.");
                             break;
+
                         default:
                             createNotification("네트워크 알림", "오류가 발생하였습니다.");
                     }
@@ -292,6 +306,7 @@ public class MainActivity extends Activity {
 
             cm.registerNetworkCallback(builder.build(), networkCallback);
         }
+        // 마시멜로 버전 이하일 경우
         else {
             createNotification("시스템 알림", "지원하지 않는 API 버전입니다.");
         }
@@ -303,9 +318,12 @@ public class MainActivity extends Activity {
     private void stopNetworkDetection() {
         ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
+        // 마시멜로 버전 이상일 경우
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             cm.unregisterNetworkCallback(networkCallback);
         }
+        // 마시멜로 버전 이하일 경우
+        else { }
     }
 
     /**
@@ -316,12 +334,16 @@ public class MainActivity extends Activity {
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
                 .setContentText(text)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true);
 
         NotificationManager notificationManager = (NotificationManager)getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
+        // 오레오 버전 이상일 경우
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            notificationManager.createNotificationChannel(new NotificationChannel("network", "네트워크 알림", NotificationManager.IMPORTANCE_DEFAULT));
+            notificationManager.createNotificationChannel(new NotificationChannel("network", "네트워크 알림", NotificationManager.IMPORTANCE_HIGH));
         }
+        // 오레오 버전 이하일 경우 Notification Channel 사용하지 않는 방식으로 구현해야 함
+        else { }
 
         notificationManager.notify(1, builder.build());
     }
