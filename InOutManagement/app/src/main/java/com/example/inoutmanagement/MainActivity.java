@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -85,13 +86,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        // 위치 권한이 있을 경우 네트워크 감지 시작, 없을 경우 권한 요청
-        if(hasLocationPermission()) {
-            startNetworkDetection();
-        }
-        else {
-            requestLocationPermission();
-        }
+        checkLocationPermission();
     }
 
     @Override
@@ -104,33 +99,44 @@ public class MainActivity extends Activity {
      * 위치 권한 확인
      * @return 권한 여부
      */
-    public boolean hasLocationPermission() {
-        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
+    public void checkLocationPermission() {
+        int foregroundPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
 
-        // 위치 권한이 있으면 true, 없으면 false를 반환
-        if(permissionCheck == PackageManager.PERMISSION_GRANTED)
-            return true;
+        // foreground 권한이 있으면 background 권한도 있는지 확인, 없으면 foreground 권한 요청
+        if(foregroundPermission == PackageManager.PERMISSION_GRANTED) {
+            int backgroundPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+
+            // background 권한이 있으면 네트워크 감지 시작, 없으면 background 권한 요청
+            if(backgroundPermission == PackageManager.PERMISSION_GRANTED)
+                startNetworkDetection();
+            else
+                ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, 2);
+        }
         else
-            return false;
+            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 1);
     }
 
     /**
-     * 위치 권한 요청
+     * 위치 권한 요청에 대한 사용자 응답 처리
+     * @param requestCode
+     * @param permissions
+     * @param grantResults
      */
-    public void requestLocationPermission() {
-        ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 1);
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch(requestCode) {
             case 1:
-                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    startNetworkDetection();
-                }
-                else {
+                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                    ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, 2);
+                else
                     info.setText("위치 권한을 허용해주세요.");
-                }
+                break;
+            case 2:
+                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                    startNetworkDetection();
+                else
+                    info.setText("위치 권한을 '앱 사용 중에만 허용'에서 '항상 허용'으로 바꿔주세요.");
+                break;
         }
     }
 
