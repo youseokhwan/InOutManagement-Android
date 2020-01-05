@@ -52,7 +52,9 @@ public class MainActivity extends Activity {
     TextView info;
     Button wifiBtn, bluetoothBtn, getBtn, settingBtn;
 
-    WifiInfo currentWifi;
+    static WifiInfo currentWifi;
+
+    WifiManager wifiManager;
     SharedPreferences appData;
     ConnectivityManager.NetworkCallback networkCallback;
 
@@ -205,7 +207,7 @@ public class MainActivity extends Activity {
      * 기기에 연결된 Wi-fi에 대한 정보 currentWifi 변수에 저장
      */
     public void getWifiInformation() {
-        WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         currentWifi = new WifiInfo(wifiManager.getConnectionInfo());
     }
 
@@ -213,7 +215,7 @@ public class MainActivity extends Activity {
      * Wi-fi 목록을 TextView에 디스플레이
      */
     public void getWifiList() {
-        WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         List<ScanResult> scanResults = wifiManager.getScanResults();
 
         // 검색된 Wi-fi의 개수 출력
@@ -319,8 +321,8 @@ public class MainActivity extends Activity {
             networkCallback = new ConnectivityManager.NetworkCallback() {
                 @Override
                 public void onAvailable(Network network) {
-                    // 디바이스의 Wi-Fi 기능이 어떤 상태인지 확인하기 위한 WifiManager
-                    WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                    // 디바이스의 Wi-Fi 연결 상태 가져오기
+                    getWifiInformation();
 
                     // 네트워크에 연결됐을 때 Wi-Fi 기능의 On/Off 상태 여부로 네트워크 판단
                     switch(wifiManager.getWifiState()) {
@@ -332,8 +334,6 @@ public class MainActivity extends Activity {
 
                         // Wi-Fi가 켜져있는 경우
                         case WifiManager.WIFI_STATE_ENABLED: {
-                            getWifiInformation();
-
                             // 연결중이던 Wi-Fi가 신호 세기가 약해져서 셀룰러 데이터로 연결된 경우
                             if(currentWifi.getRssi() <= -70)
                                 createNotification("네트워크 알림", "외출: 셀룰러 데이터로 연결되었습니다.");
@@ -373,7 +373,7 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Notification
+     * Notification 생성
      */
     private void createNotification(String title, String text) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "network")
@@ -394,4 +394,17 @@ public class MainActivity extends Activity {
         notificationManager.notify(1, builder.build());
     }
 
+    /**
+     * SettingActivity에서 currentWifi의 SSID를 얻기 위한 메소드
+     */
+    public static String getCurrentWifiSSID() {
+        return currentWifi.getSSID();
+    }
+
+    /**
+     * SettingActivity에서 currentWifi의 BSSID를 얻기 위한 메소드
+     */
+    public static String getCurrentWifiBSSID() {
+        return currentWifi.getBSSID();
+    }
 }

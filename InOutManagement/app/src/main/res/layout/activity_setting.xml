@@ -18,4 +18,59 @@
         android:textSize="20sp"
         android:textColor="@android:color/black" />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="[현재 등록된 Home Wi-Fi 목록]"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        android:id="@+id/homeWifiList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="[현재 연결된 Wi-Fi 정보]"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        android:id="@+id/currentWifiInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:text="연결된 Wi-Fi 정보"
+        android:textColor="@android:color/black" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/refreshBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Wi-Fi 정보 새로고침" />
+
+        <Button
+            android:id="@+id/registerBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="현재 Wi-Fi를 Home Wi-Fi로 등록" />
+
+        <Button
+            android:id="@+id/clearBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Home Wi-Fi 모두 지우기" />
+
+    </LinearLayout>
+
 </LinearLayout>
