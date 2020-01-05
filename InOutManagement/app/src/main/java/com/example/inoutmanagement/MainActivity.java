@@ -52,6 +52,7 @@ public class MainActivity extends Activity {
     TextView info;
     Button wifiBtn, bluetoothBtn, getBtn, settingBtn;
 
+    // 현재 연결된 Wi-Fi 정보 저장
     static WifiInfo currentWifi;
 
     WifiManager wifiManager;
@@ -335,11 +336,18 @@ public class MainActivity extends Activity {
                         // Wi-Fi가 켜져있는 경우
                         case WifiManager.WIFI_STATE_ENABLED: {
                             // 연결중이던 Wi-Fi가 신호 세기가 약해져서 셀룰러 데이터로 연결된 경우
-                            if(currentWifi.getRssi() <= -70)
+                            if(currentWifi.getRssi() <= -70) {
                                 createNotification("네트워크 알림", "외출: 셀룰러 데이터로 연결되었습니다.");
+                            }
                             // 다른 Wi-Fi가 연결된 경우
-                            else
-                                createNotification("네트워크 알림", "외출/귀가 판단: Wi-fi(" + currentWifi.getSSID() + ")로 연결되었습니다.");
+                            else {
+                                // 연결된 Wi-Fi가 Home Wi-Fi인 경우
+                                if(isHomeWifi(currentWifi.getBSSID()))
+                                    createNotification("네트워크 알림", "귀가: Wi-fi(" + currentWifi.getSSID() + ")로 연결되었습니다.");
+                                // 연결된 Wi-Fi가 Home Wi-Fi가 아닌 경우
+                                else
+                                    createNotification("네트워크 알림", "외출: Wi-fi(" + currentWifi.getSSID() + ")로 연결되었습니다.");
+                            }
 
                             break;
                         }
@@ -406,5 +414,23 @@ public class MainActivity extends Activity {
      */
     public static String getCurrentWifiBSSID() {
         return currentWifi.getBSSID();
+    }
+
+    /**
+     * 연결된 Wi-Fi가 Home Wi-Fi인지 판단
+     * @param BSSID 연결된 Wi-Fi의 BSSID 값
+     * @return boolean Home Wi-Fi면 true 반환, 아니면 false 반환
+     */
+    public boolean isHomeWifi(String BSSID) {
+        String data = appData.getString("homeWifiList", "");
+        String[] wifiList = data.split(";");
+
+        for(int i = 1; i < wifiList.length; i+=2) {
+            if(wifiList[i].equals(BSSID)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
