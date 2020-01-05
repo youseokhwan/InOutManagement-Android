@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
         android:gravity="center"
-        android:text="Wi-fi / Bluetooth 정보"
+        android:text="InOutManagement"
         android:textSize="20sp"
         android:textColor="@android:color/black" />
 
@@ -28,19 +28,29 @@
             android:id="@+id/wifiBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Wi-fi" />
 
         <Button
             android:id="@+id/bluetoothBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Bluetooth" />
+            android:layout_weight="1"
+            android:text="블루투스" />
 
         <Button
             android:id="@+id/getBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Get" />
+
+        <Button
+            android:id="@+id/settingBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="설정" />
 
     </LinearLayout>
 

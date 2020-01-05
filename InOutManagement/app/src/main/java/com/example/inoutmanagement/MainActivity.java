@@ -7,6 +7,8 @@ import android.app.NotificationManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
@@ -23,6 +25,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
@@ -46,10 +49,11 @@ import retrofit2.Response;
  */
 public class MainActivity extends Activity {
 
-    Button wifiBtn, bluetoothBtn, getBtn;
     TextView info;
+    Button wifiBtn, bluetoothBtn, getBtn, settingBtn;
 
     WifiInfo currentWifi;
+    SharedPreferences appData;
     ConnectivityManager.NetworkCallback networkCallback;
 
     @Override
@@ -57,17 +61,18 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        wifiBtn = findViewById(R.id.wifiBtn);
-        bluetoothBtn = findViewById(R.id.bluetoothBtn);
-        getBtn = findViewById(R.id.getBtn);
         info = findViewById(R.id.info);
+        getBtn = findViewById(R.id.getBtn);
+        wifiBtn = findViewById(R.id.wifiBtn);
+        settingBtn = findViewById(R.id.settingBtn);
+        bluetoothBtn = findViewById(R.id.bluetoothBtn);
+        appData = getSharedPreferences("appData", MODE_PRIVATE);
 
         wifiBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 getWifiInformation();
                 info.setText(currentTime() + "\n\n" + currentWifi.toString());
-
                 getWifiList();
             }
         });
@@ -83,6 +88,14 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 testGet();
+            }
+        });
+
+        settingBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), SettingActivity.class);
+                startActivity(intent);
             }
         });
 
@@ -111,16 +124,20 @@ public class MainActivity extends Activity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 int backgroundPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION);
 
-                // BACKGROUND 권한이 있으면 네트워크 감지 시작
-                if(backgroundPermission == PackageManager.PERMISSION_GRANTED)
+                // BACKGROUND 권한이 있으면 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+                if(backgroundPermission == PackageManager.PERMISSION_GRANTED) {
                     startNetworkDetection();
+                    checkFirstRun();
+                }
                 // BACKGROUND 권한이 없으면 요청
                 else
                     ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, 2);
             }
-            // 안드로이드 10 미만인 경우 네트워크 감지 시작
-            else
+            // 안드로이드 10 미만인 경우 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+            else {
                 startNetworkDetection();
+                checkFirstRun();
+            }
         }
         // FINE 권한이 없는 경우 요청
         else
@@ -143,9 +160,11 @@ public class MainActivity extends Activity {
                     // 안드로이드 10 이상인 경우 BACKGROUND 권한도 필요
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 2);
-                    // 안드로이드 10 미만인 경우 네트워크 감지 시작
-                    else
+                    // 안드로이드 10 미만인 경우 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+                    else {
                         startNetworkDetection();
+                        checkFirstRun();
+                    }
                 }
                 // FINE 권한이 거부된 경우 TextView 수정
                 else
@@ -153,13 +172,32 @@ public class MainActivity extends Activity {
                 break;
 
             case 2:
-                // BACKGROUND 권한이 허용된 경우 네트워크 감지 시작
-                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                // BACKGROUND 권한이 허용된 경우 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     startNetworkDetection();
+                    checkFirstRun();
+                }
                 // BACKGROUND 권한이 거부된 경우 TextView 수정
                 else
                     info.setText("위치 권한을 '앱 사용 중에만 허용'에서 '항상 허용'으로 바꿔주세요.");
                 break;
+        }
+    }
+
+    /**
+     * 최초 실행인지 판단하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+     */
+    public void checkFirstRun() {
+        // 최초 실행일 경우
+        if(appData.getBoolean("isFirstRun", true)) {
+            // isFirstRun 변수를 false로 변경
+            SharedPreferences.Editor editor = appData.edit();
+            editor.putBoolean("isFirstRun", false);
+            editor.apply();
+
+            // Home Wi-Fi를 설정하는 화면으로 유도
+            Intent intent = new Intent(getApplicationContext(), SettingActivity.class);
+            startActivity(intent);
         }
     }
 
