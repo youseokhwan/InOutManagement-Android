@@ -55,7 +55,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Wi-Fi 정보 새로고침" />
+            android:text="연결된 Wi-Fi 정보 새로고침" />
 
         <Button
             android:id="@+id/registerBtn"

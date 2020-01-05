@@ -198,6 +198,9 @@ public class MainActivity extends Activity {
             editor.putBoolean("isFirstRun", false);
             editor.apply();
 
+            // 최초 실행 시 Toast 띄우기
+            Toast.makeText(getApplicationContext(), "최초 실행: Home Wi-Fi를 설정해주세요.", Toast.LENGTH_SHORT).show();
+
             // Home Wi-Fi를 설정하는 화면으로 유도
             Intent intent = new Intent(getApplicationContext(), SettingActivity.class);
             startActivity(intent);
@@ -266,7 +269,7 @@ public class MainActivity extends Activity {
             }
         }
 
-        info.setText(currentTime() + "\n\n" + bluetoothInfo);
+        info.setText(currentTime() + "\n\n[페어링된 블루투스 기기 목록]\n" + bluetoothInfo);
     }
 
     /**
@@ -289,7 +292,7 @@ public class MainActivity extends Activity {
             @Override
             public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
                 if(response.isSuccessful()) {
-                    String content = "[Repository 목록]";
+                    String content = "[Retrofit2 RestAPI GET 예제입니다]";
 
                     for(int i = 0; i < response.body().size(); i++) {
                         content += "\n" + (i+1) + ". " + response.body().get(i).getAsJsonObject().get("name").getAsString();
