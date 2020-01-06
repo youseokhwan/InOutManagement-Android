@@ -339,7 +339,7 @@ public class MainActivity extends Activity {
                         // Wi-Fi가 켜져있는 경우
                         case WifiManager.WIFI_STATE_ENABLED: {
                             // 연결중이던 Wi-Fi가 신호 세기가 약해져서 셀룰러 데이터로 연결된 경우
-                            if(currentWifi.getRssi() <= -70) {
+                            if(currentWifi.getRssi() < -80) {
                                 createNotification("네트워크 알림", "외출: 셀룰러 데이터로 연결되었습니다.");
                             }
                             // 다른 Wi-Fi가 연결된 경우
