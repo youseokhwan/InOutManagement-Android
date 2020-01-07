@@ -65,7 +65,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         info = findViewById(R.id.info);
-        getBtn = findViewById(R.id.getBtn);
+//        getBtn = findViewById(R.id.getBtn);
         wifiBtn = findViewById(R.id.wifiBtn);
         settingBtn = findViewById(R.id.settingBtn);
         bluetoothBtn = findViewById(R.id.bluetoothBtn);
@@ -87,12 +87,12 @@ public class MainActivity extends Activity {
             }
         });
 
-        getBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                testGet();
-            }
-        });
+//        getBtn.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                testGet();
+//            }
+//        });
 
         settingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -284,33 +284,33 @@ public class MainActivity extends Activity {
     /**
      * Retrofit2 라이브러리를 이용하여 get 호출 예제 적용(GitHub Repository 목록 가져오기)
      */
-    private void testGet() {
-        RetrofitConnection retrofitConnection = new RetrofitConnection();
-        Call<JsonArray> call = retrofitConnection.server.getData();
-
-        call.enqueue(new Callback<JsonArray>() {
-            @Override
-            public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
-                if(response.isSuccessful()) {
-                    String content = "[Retrofit2 RestAPI GET 예제입니다]";
-
-                    for(int i = 0; i < response.body().size(); i++) {
-                        content += "\n" + (i+1) + ". " + response.body().get(i).getAsJsonObject().get("name").getAsString();
-                    }
-
-                    info.setText(currentTime() + "\n\n" + content);
-                }
-                else {
-                    info.setText(currentTime() + "\n\n" + "데이터 전송 오류!");
-                }
-            }
-
-            @Override
-            public void onFailure(Call<JsonArray> call, Throwable t) {
-                info.setText(currentTime() + "\n\n" + "서버 연결 오류!!");
-            }
-        });
-    }
+//    private void testGet() {
+//        RetrofitConnection retrofitConnection = new RetrofitConnection();
+//        Call<JsonArray> call = retrofitConnection.server.getData();
+//
+//        call.enqueue(new Callback<JsonArray>() {
+//            @Override
+//            public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
+//                if(response.isSuccessful()) {
+//                    String content = "[Retrofit2 RestAPI GET 예제입니다]";
+//
+//                    for(int i = 0; i < response.body().size(); i++) {
+//                        content += "\n" + (i+1) + ". " + response.body().get(i).getAsJsonObject().get("name").getAsString();
+//                    }
+//
+//                    info.setText(currentTime() + "\n\n" + content);
+//                }
+//                else {
+//                    info.setText(currentTime() + "\n\n" + "데이터 전송 오류!");
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(Call<JsonArray> call, Throwable t) {
+//                info.setText(currentTime() + "\n\n" + "서버 연결 오류!!");
+//            }
+//        });
+//    }
 
     /**
      * 네트워크 감지 및 Notification 생성
