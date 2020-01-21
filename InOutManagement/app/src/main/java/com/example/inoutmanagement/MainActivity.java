@@ -11,6 +11,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkRequest;
@@ -50,13 +52,14 @@ import retrofit2.Response;
 public class MainActivity extends Activity {
 
     TextView info;
-    Button wifiBtn, bluetoothBtn, getBtn, settingBtn;
+    Button wifiBtn, bluetoothBtn, gpsBtn, getBtn, settingBtn;
 
     // 현재 연결된 Wi-Fi 정보 저장
     static WifiInfo currentWifi;
 
     WifiManager wifiManager;
     SharedPreferences appData;
+    LocationManager locationManager;
     ConnectivityManager.NetworkCallback networkCallback;
 
     @Override
@@ -65,7 +68,8 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         info = findViewById(R.id.info);
-//        getBtn = findViewById(R.id.getBtn);
+        gpsBtn = findViewById(R.id.gpsBtn);
+        getBtn = findViewById(R.id.getBtn);
         wifiBtn = findViewById(R.id.wifiBtn);
         settingBtn = findViewById(R.id.settingBtn);
         bluetoothBtn = findViewById(R.id.bluetoothBtn);
@@ -87,12 +91,19 @@ public class MainActivity extends Activity {
             }
         });
 
-//        getBtn.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                testGet();
-//            }
-//        });
+        gpsBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getLocation();
+            }
+        });
+
+        getBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                testGet();
+            }
+        });
 
         settingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -122,19 +133,19 @@ public class MainActivity extends Activity {
         int foregroundPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
 
         // FINE 권한이 있는 경우 안드로이드 버전에 따라 분기
-        if(foregroundPermission == PackageManager.PERMISSION_GRANTED) {
+        if (foregroundPermission == PackageManager.PERMISSION_GRANTED) {
             // 안드로이드 10 이상인 경우 BACKGROUND 권한도 필요
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 int backgroundPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION);
 
                 // BACKGROUND 권한이 있으면 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
-                if(backgroundPermission == PackageManager.PERMISSION_GRANTED) {
+                if (backgroundPermission == PackageManager.PERMISSION_GRANTED) {
                     startNetworkDetection();
                     checkFirstRun();
                 }
                 // BACKGROUND 권한이 없으면 요청
                 else
-                    ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, 2);
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 2);
             }
             // 안드로이드 10 미만인 경우 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
             else {
@@ -144,7 +155,7 @@ public class MainActivity extends Activity {
         }
         // FINE 권한이 없는 경우 요청
         else
-            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, 1);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
     }
 
     /**
@@ -156,14 +167,14 @@ public class MainActivity extends Activity {
      */
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch(requestCode) {
+        switch (requestCode) {
             case 1:
                 // FINE 권한이 허용된 경우 안드로이드 버전에 따라 분기
-                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // 안드로이드 10 이상인 경우 BACKGROUND 권한도 필요
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 2);
-                    // 안드로이드 10 미만인 경우 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+                        // 안드로이드 10 미만인 경우 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
                     else {
                         startNetworkDetection();
                         checkFirstRun();
@@ -176,7 +187,7 @@ public class MainActivity extends Activity {
 
             case 2:
                 // BACKGROUND 권한이 허용된 경우 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
-                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     startNetworkDetection();
                     checkFirstRun();
                 }
@@ -192,7 +203,7 @@ public class MainActivity extends Activity {
      */
     public void checkFirstRun() {
         // 최초 실행일 경우
-        if(appData.getBoolean("isFirstRun", true)) {
+        if (appData.getBoolean("isFirstRun", true)) {
             // isFirstRun 변수를 false로 변경
             SharedPreferences.Editor editor = appData.edit();
             editor.putBoolean("isFirstRun", false);
@@ -211,7 +222,7 @@ public class MainActivity extends Activity {
      * 기기에 연결된 Wi-fi에 대한 정보 currentWifi 변수에 저장
      */
     public void getWifiInformation() {
-        wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         currentWifi = new WifiInfo(wifiManager.getConnectionInfo());
     }
 
@@ -219,26 +230,25 @@ public class MainActivity extends Activity {
      * Wi-fi 목록을 TextView에 디스플레이
      */
     public void getWifiList() {
-        wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         List<ScanResult> scanResults = wifiManager.getScanResults();
 
         // 검색된 Wi-fi의 개수 출력
         info.append("\n\n[검색된 Wi-fi 리스트] - " + scanResults.size() + "개\n");
 
         // 각 Wi-fi의 SSID 출력
-        for(ScanResult result : scanResults) {
+        for (ScanResult result : scanResults) {
             String ssid = "\"" + result.SSID + "\"";
 
             // 현재 연결된 Wi-fi와 같은 BSSID일 경우 보라색으로 강조
-            if(result.BSSID.equals(currentWifi.getBSSID())) {
+            if (result.BSSID.equals(currentWifi.getBSSID())) {
                 SpannableStringBuilder builder = new SpannableStringBuilder(ssid);
                 builder.setSpan(new ForegroundColorSpan(Color.parseColor("#5F00FF")), 0, ssid.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
                 info.append("SSID: ");
                 info.append(builder);
                 info.append("\n");
-            }
-            else {
+            } else {
                 info.append("SSID: " + ssid + "\n");
             }
         }
@@ -251,20 +261,17 @@ public class MainActivity extends Activity {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         String bluetoothInfo = "";
 
-        if(bluetoothAdapter == null) {
+        if (bluetoothAdapter == null) {
             bluetoothInfo = "블루투스를 지원하지 않는 기기입니다.";
-        }
-        else if(!bluetoothAdapter.isEnabled()) {
+        } else if (!bluetoothAdapter.isEnabled()) {
             bluetoothInfo = "블루투스 기능이 꺼져있습니다.";
-        }
-        else {
+        } else {
             Set<BluetoothDevice> pairDevices = bluetoothAdapter.getBondedDevices();
 
-            if(pairDevices.size() > 0) {
-                for(BluetoothDevice device : pairDevices)
+            if (pairDevices.size() > 0) {
+                for (BluetoothDevice device : pairDevices)
                     bluetoothInfo += device.getName().toString() + "\n";
-            }
-            else {
+            } else {
                 bluetoothInfo = "페어링된 블루투스 장치가 없습니다.";
             }
         }
@@ -282,35 +289,58 @@ public class MainActivity extends Activity {
     }
 
     /**
+     * 위도, 경도 출력
+     */
+    private void getLocation() {
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    Activity#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for Activity#requestPermissions for more details.
+                return;
+            }
+        }
+        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+        info.setText("위도: " + location.getLatitude() + "\n");
+        info.append("경도: " + location.getLongitude());
+    }
+
+    /**
      * Retrofit2 라이브러리를 이용하여 get 호출 예제 적용(GitHub Repository 목록 가져오기)
      */
-//    private void testGet() {
-//        RetrofitConnection retrofitConnection = new RetrofitConnection();
-//        Call<JsonArray> call = retrofitConnection.server.getData();
-//
-//        call.enqueue(new Callback<JsonArray>() {
-//            @Override
-//            public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
-//                if(response.isSuccessful()) {
-//                    String content = "[Retrofit2 RestAPI GET 예제입니다]";
-//
-//                    for(int i = 0; i < response.body().size(); i++) {
-//                        content += "\n" + (i+1) + ". " + response.body().get(i).getAsJsonObject().get("name").getAsString();
-//                    }
-//
-//                    info.setText(currentTime() + "\n\n" + content);
-//                }
-//                else {
-//                    info.setText(currentTime() + "\n\n" + "데이터 전송 오류!");
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<JsonArray> call, Throwable t) {
-//                info.setText(currentTime() + "\n\n" + "서버 연결 오류!!");
-//            }
-//        });
-//    }
+    private void testGet() {
+        RetrofitConnection retrofitConnection = new RetrofitConnection();
+        Call<JsonArray> call = retrofitConnection.server.getData();
+
+        call.enqueue(new Callback<JsonArray>() {
+            @Override
+            public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
+                if(response.isSuccessful()) {
+                    String content = "[Retrofit2 RestAPI GET 예제입니다]";
+
+                    for(int i = 0; i < response.body().size(); i++) {
+                        content += "\n" + (i+1) + ". " + response.body().get(i).getAsJsonObject().get("name").getAsString();
+                    }
+
+                    info.setText(currentTime() + "\n\n" + content);
+                }
+                else {
+                    info.setText(currentTime() + "\n\n" + "데이터 전송 오류!");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonArray> call, Throwable t) {
+                info.setText(currentTime() + "\n\n" + "서버 연결 오류!!");
+            }
+        });
+    }
 
     /**
      * 네트워크 감지 및 Notification 생성
