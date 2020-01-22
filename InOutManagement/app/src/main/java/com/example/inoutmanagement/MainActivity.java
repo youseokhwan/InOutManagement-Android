@@ -25,7 +25,11 @@ import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.View;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -51,8 +55,16 @@ import retrofit2.Response;
  */
 public class MainActivity extends Activity {
 
+    // TabView
+    TabHost tabHost;
+
+    // NativeView
     TextView info;
     Button wifiBtn, bluetoothBtn, gpsBtn, getBtn, settingBtn;
+
+    // WebView
+    WebView webView;
+    WebSettings webSettings;
 
     // 현재 연결된 Wi-Fi 정보 저장
     static WifiInfo currentWifi;
@@ -66,6 +78,12 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // TabHost 설정
+        setTabHost();
+
+        // WebView 설정
+        setWebView();
 
         info = findViewById(R.id.info);
         gpsBtn = findViewById(R.id.gpsBtn);
@@ -123,6 +141,50 @@ public class MainActivity extends Activity {
 
         // 네트워크 감지 중단
         stopNetworkDetection();
+    }
+
+    /**
+     * TabHost 설정
+     */
+    public void setTabHost() {
+        // TabHost 설정
+        tabHost = findViewById(R.id.tabHost);
+        tabHost.setup();
+
+        // Native 탭
+        TabHost.TabSpec ts1 = tabHost.newTabSpec("Tab Spec 1");
+        ts1.setContent(R.id.nativeView);
+        ts1.setIndicator("Native");
+        tabHost.addTab(ts1);
+
+        // WebView 탭
+        TabHost.TabSpec ts2 = tabHost.newTabSpec("Tab Spec 2");
+        ts2.setContent(R.id.webView);
+        ts2.setIndicator("Web");
+        tabHost.addTab(ts2);
+    }
+
+    /**
+     * WebView 설정
+     */
+    public void setWebView() {
+        // 웹뷰 설정
+        webView = findViewById(R.id.webView);
+
+        webView.setWebViewClient(new WebViewClient()); // 클릭 시 새창 안뜨게
+        webSettings = webView.getSettings(); //세부 세팅 등록
+        webSettings.setJavaScriptEnabled(true); // 웹페이지 자바스클비트 허용 여부
+        webSettings.setSupportMultipleWindows(false); // 새창 띄우기 허용 여부
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(false); // 자바스크립트 새창 띄우기(멀티뷰) 허용 여부
+        webSettings.setLoadWithOverviewMode(true); // 메타태그 허용 여부
+        webSettings.setUseWideViewPort(true); // 화면 사이즈 맞추기 허용 여부
+        webSettings.setSupportZoom(true); // 화면 줌 허용 여부
+        webSettings.setBuiltInZoomControls(true); // 화면 확대 축소 허용 여부
+        webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN); // 컨텐츠 사이즈 맞추기
+        webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE); // 브라우저 캐시 허용 여부
+        webSettings.setDomStorageEnabled(true); // 로컬저장소 허용 여부
+
+        webView.loadUrl("http://xiplug.keico.co.kr/"); // 웹뷰에 표시할 웹사이트 주소, 웹뷰 시작
     }
 
     /**
