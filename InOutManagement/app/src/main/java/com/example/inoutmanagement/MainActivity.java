@@ -40,6 +40,7 @@ import androidx.core.content.ContextCompat;
 import com.google.gson.JsonArray;
 
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -60,7 +61,7 @@ public class MainActivity extends Activity {
 
     // NativeView
     TextView info;
-    Button wifiBtn, bluetoothBtn, gpsBtn, getBtn, settingBtn;
+    Button wifiBtn, bluetoothBtn, gpsBtn, postBtn, settingBtn;
 
     // WebView
     WebView webView;
@@ -87,7 +88,7 @@ public class MainActivity extends Activity {
 
         info = findViewById(R.id.info);
         gpsBtn = findViewById(R.id.gpsBtn);
-        getBtn = findViewById(R.id.getBtn);
+        postBtn = findViewById(R.id.postBtn);
         wifiBtn = findViewById(R.id.wifiBtn);
         settingBtn = findViewById(R.id.settingBtn);
         bluetoothBtn = findViewById(R.id.bluetoothBtn);
@@ -116,10 +117,10 @@ public class MainActivity extends Activity {
             }
         });
 
-        getBtn.setOnClickListener(new View.OnClickListener() {
+        postBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                testGet();
+                sendWifiStatus();
             }
         });
 
@@ -376,18 +377,60 @@ public class MainActivity extends Activity {
     /**
      * Retrofit2 라이브러리를 이용하여 get 호출 예제 적용(GitHub Repository 목록 가져오기)
      */
-    private void testGet() {
-        RetrofitConnection retrofitConnection = new RetrofitConnection();
-        Call<JsonArray> call = retrofitConnection.server.getData();
+//    private void testGet() {
+//        RetrofitConnection retrofitConnection = new RetrofitConnection();
+//        Call<JsonArray> call = retrofitConnection.server.getData();
+//
+//        call.enqueue(new Callback<JsonArray>() {
+//            @Override
+//            public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
+//                if(response.isSuccessful()) {
+//                    String content = "[Retrofit2 RestAPI GET 예제입니다]";
+//
+//                    for(int i = 0; i < response.body().size(); i++) {
+//                        content += "\n" + (i+1) + ". " + response.body().get(i).getAsJsonObject().get("name").getAsString();
+//                    }
+//
+//                    info.setText(currentTime() + "\n\n" + content);
+//                }
+//                else {
+//                    info.setText(currentTime() + "\n\n" + "데이터 전송 오류!");
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(Call<JsonArray> call, Throwable t) {
+//                info.setText(currentTime() + "\n\n" + "서버 연결 오류!!");
+//            }
+//        });
+//    }
 
-        call.enqueue(new Callback<JsonArray>() {
+    /**
+     * 외출/귀가 시 서버로 SSID, STATE 전송
+     */
+    private void sendWifiStatus() {
+        // post로 보낼 데이터셋
+        HashMap<String, String> input = new HashMap<>();
+
+        // ssid
+        input.put("ssid", currentWifi.getSSID());
+
+        // wifi 상태(on, off)
+        wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if(wifiManager.isWifiEnabled())
+            input.put("state", "on");
+        else
+            input.put("state", "off");
+
+        RetrofitConnection retrofitConnection = new RetrofitConnection();
+        retrofitConnection.server.postData(input).enqueue(new Callback<HashMap<String, String>>() {
             @Override
-            public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
+            public void onResponse(Call<HashMap<String, String>> call, Response<HashMap<String, String>> response) {
                 if(response.isSuccessful()) {
-                    String content = "[Retrofit2 RestAPI GET 예제입니다]";
+                    String content = "[Retrofit2 POST]";
 
                     for(int i = 0; i < response.body().size(); i++) {
-                        content += "\n" + (i+1) + ". " + response.body().get(i).getAsJsonObject().get("name").getAsString();
+                        content += "\n" + (i+1) + ". " + response.body();
                     }
 
                     info.setText(currentTime() + "\n\n" + content);
@@ -398,8 +441,9 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onFailure(Call<JsonArray> call, Throwable t) {
+            public void onFailure(Call<HashMap<String, String>> call, Throwable t) {
                 info.setText(currentTime() + "\n\n" + "서버 연결 오류!!");
+                info.append(t.toString());
             }
         });
     }
