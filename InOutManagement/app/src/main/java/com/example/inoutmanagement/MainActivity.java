@@ -409,42 +409,38 @@ public class MainActivity extends Activity {
      * 외출/귀가 시 서버로 SSID, STATE 전송
      */
     private void sendWifiStatus() {
-        // post로 보낼 데이터셋
-        HashMap<String, String> input = new HashMap<>();
-
-        // ssid
-        input.put("ssid", currentWifi.getSSID());
-
-        // wifi 상태(on, off)
+        String input = currentWifi.getSSID() + ",";
         wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if(wifiManager.isWifiEnabled())
-            input.put("state", "on");
+            input += "on";
         else
-            input.put("state", "off");
+            input += "off";
 
         RetrofitConnection retrofitConnection = new RetrofitConnection();
-        retrofitConnection.server.postData(input).enqueue(new Callback<HashMap<String, String>>() {
+        retrofitConnection.server.postData(input).enqueue(new Callback<String>() {
+
             @Override
-            public void onResponse(Call<HashMap<String, String>> call, Response<HashMap<String, String>> response) {
+            public void onResponse(Call<String> call, Response<String> response) {
                 if(response.isSuccessful()) {
-                    String content = "[Retrofit2 POST]";
-
-                    for(int i = 0; i < response.body().size(); i++) {
-                        content += "\n" + (i+1) + ". " + response.body();
-                    }
-
-                    info.setText(currentTime() + "\n\n" + content);
+                    info.setText("onResponse() - isSuccessful() true\n\n");
+                    info.append("body : " + response.body() + "\n");
+                    info.append("code : " + response.code() + "\n");
+                    info.append("message : " + response.message() + "\n");
                 }
                 else {
-                    info.setText(currentTime() + "\n\n" + "데이터 전송 오류!");
+                    info.setText(currentTime() + "\n\n" + "onResponse() - isSuccessful() false\n\n");
+                    info.append("body : " + response.body() + "\n");
+                    info.append("code : " + response.code() + "\n");
+                    info.append("message : " + response.message() + "\n");
                 }
             }
 
             @Override
-            public void onFailure(Call<HashMap<String, String>> call, Throwable t) {
-                info.setText(currentTime() + "\n\n" + "서버 연결 오류!!");
+            public void onFailure(Call<String> call, Throwable t) {
+                info.setText(currentTime() + "\n\n" + "onFailure\n\n");
                 info.append(t.toString());
             }
+
         });
     }
 

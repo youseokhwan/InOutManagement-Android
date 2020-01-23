@@ -8,10 +8,10 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class RetrofitConnection {
 
     // Server URL(내부)
-//    String URL = "https://192.9.45.226:40006/";
+//    String URL = "http://192.9.45.226:40006/";
 
     // Server URL(외부)
-    String URL = "https://210.102.181.156:40006/";
+    String URL = "http://210.102.181.156:40006/";
 
     Retrofit retrofit = new Retrofit.Builder()
             .baseUrl(URL)

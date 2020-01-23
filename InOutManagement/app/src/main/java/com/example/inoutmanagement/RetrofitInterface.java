@@ -9,15 +9,13 @@ import java.util.HashMap;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.FieldMap;
+import retrofit2.http.Headers;
 import retrofit2.http.POST;
 
 public interface RetrofitInterface {
-    // JsonArray는 나중에 실제 사용될 데이터 클래스로 바꾸기
 
-//    @GET("users/youseokhwan/repos")
-//    Call<JsonArray> getData();
-
+    @Headers("Content-Type: application/json")
     @POST("getcheck/wifi")
-    Call<HashMap<String, String>> postData(@Body HashMap<String, String> data);
+    Call<String> postData(@Body String data);
 
 }
