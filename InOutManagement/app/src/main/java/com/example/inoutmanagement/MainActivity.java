@@ -375,37 +375,6 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Retrofit2 라이브러리를 이용하여 get 호출 예제 적용(GitHub Repository 목록 가져오기)
-     */
-//    private void testGet() {
-//        RetrofitConnection retrofitConnection = new RetrofitConnection();
-//        Call<JsonArray> call = retrofitConnection.server.getData();
-//
-//        call.enqueue(new Callback<JsonArray>() {
-//            @Override
-//            public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
-//                if(response.isSuccessful()) {
-//                    String content = "[Retrofit2 RestAPI GET 예제입니다]";
-//
-//                    for(int i = 0; i < response.body().size(); i++) {
-//                        content += "\n" + (i+1) + ". " + response.body().get(i).getAsJsonObject().get("name").getAsString();
-//                    }
-//
-//                    info.setText(currentTime() + "\n\n" + content);
-//                }
-//                else {
-//                    info.setText(currentTime() + "\n\n" + "데이터 전송 오류!");
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<JsonArray> call, Throwable t) {
-//                info.setText(currentTime() + "\n\n" + "서버 연결 오류!!");
-//            }
-//        });
-//    }
-
-    /**
      * 외출/귀가 시 서버로 SSID, STATE 전송
      */
     private void sendWifiStatus() {
@@ -415,6 +384,8 @@ public class MainActivity extends Activity {
             input += "on";
         else
             input += "off";
+
+        Log.d("postData", input);
 
         RetrofitConnection retrofitConnection = new RetrofitConnection();
         retrofitConnection.server.postData(input).enqueue(new Callback<String>() {
@@ -466,6 +437,7 @@ public class MainActivity extends Activity {
                         case WifiManager.WIFI_STATE_DISABLED:
                         case WifiManager.WIFI_STATE_DISABLING:
                             createNotification("네트워크 알림", "외출: 셀룰러 데이터로 연결되었습니다.");
+                            sendWifiStatus();
                             break;
 
                         // Wi-Fi가 켜져있는 경우
@@ -473,15 +445,20 @@ public class MainActivity extends Activity {
                             // 연결중이던 Wi-Fi가 신호 세기가 약해져서 셀룰러 데이터로 연결된 경우
                             if(currentWifi.getRssi() < -80) {
                                 createNotification("네트워크 알림", "외출: 셀룰러 데이터로 연결되었습니다.");
+                                sendWifiStatus();
                             }
                             // 다른 Wi-Fi가 연결된 경우
                             else {
                                 // 연결된 Wi-Fi가 Home Wi-Fi인 경우
-                                if(isHomeWifi(currentWifi.getBSSID()))
+                                if(isHomeWifi(currentWifi.getBSSID())) {
                                     createNotification("네트워크 알림", "귀가: Wi-fi(" + currentWifi.getSSID() + ")로 연결되었습니다.");
+                                    sendWifiStatus();
+                                }
                                 // 연결된 Wi-Fi가 Home Wi-Fi가 아닌 경우
-                                else
+                                else {
                                     createNotification("네트워크 알림", "외출: Wi-fi(" + currentWifi.getSSID() + ")로 연결되었습니다.");
+                                    sendWifiStatus();
+                                }
                             }
 
                             break;
