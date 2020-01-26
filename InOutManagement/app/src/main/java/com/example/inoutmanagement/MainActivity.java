@@ -12,6 +12,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
+import android.location.Geocoder;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -37,10 +39,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
-import com.google.gson.JsonArray;
-
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -70,9 +69,9 @@ public class MainActivity extends Activity {
     // 현재 연결된 Wi-Fi 정보 저장
     static WifiInfo currentWifi;
 
+    GpsTracker gpsTracker;
     WifiManager wifiManager;
     SharedPreferences appData;
-    LocationManager locationManager;
     ConnectivityManager.NetworkCallback networkCallback;
 
     @Override
@@ -142,6 +141,9 @@ public class MainActivity extends Activity {
 
         // 네트워크 감지 중단
         stopNetworkDetection();
+
+        // GPS 감지 종료
+        gpsTracker.stopGps();
     }
 
     /**
@@ -355,23 +357,35 @@ public class MainActivity extends Activity {
      * 위도, 경도 출력
      */
     private void getLocation() {
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    Activity#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for Activity#requestPermissions for more details.
-                return;
-            }
-        }
-        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+//        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//                // TODO: Consider calling
+//                //    Activity#requestPermissions
+//                // here to request the missing permissions, and then overriding
+//                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+//                //                                          int[] grantResults)
+//                // to handle the case where the user grants the permission. See the documentation
+//                // for Activity#requestPermissions for more details.
+//                return;
+//            }
+//        }
+//
+//        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+//
+//        if(location != null) {
+//            info.setText("위도: " + location.getLatitude() + "\n");
+//            info.append("경도: " + location.getLongitude());
+//        } else {
+//            info.setText("location = null");
+//        }
 
-        info.setText("위도: " + location.getLatitude() + "\n");
-        info.append("경도: " + location.getLongitude());
+        gpsTracker = new GpsTracker(MainActivity.this);
+
+        double latitude = gpsTracker.getLatitude();
+        double longitude = gpsTracker.getLongitude();
+
+        info.setText("위도: " + latitude + "\n경도: " + longitude);
     }
 
     /**
