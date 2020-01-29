@@ -14,7 +14,7 @@ import retrofit2.http.POST;
 
 public interface RetrofitInterface {
 
-    @Headers("\"Content-Type\": \"application/json\"")
+    @Headers("Content-Type: application/json")
     @POST("getcheck/wifi")
     Call<String> postData(@Body String data);
 
