@@ -39,6 +39,11 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.gson.JsonObject;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Calendar;
 import java.util.List;
 import java.util.Set;
@@ -392,37 +397,35 @@ public class MainActivity extends Activity {
      * 외출/귀가 시 서버로 SSID, STATE 전송
      */
     private void sendWifiStatus() {
-        String input = currentWifi.getSSID() + ",";
-        wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        if(wifiManager.isWifiEnabled())
-            input += "on";
-        else
-            input += "off";
-
-        Log.d("postData", input);
+        JSONObject input = new JSONObject();
+        try {
+            input.put("ssid", currentWifi.getSSID().substring(1, currentWifi.getSSID().length()-1).trim());
+            if(wifiManager.isWifiEnabled())
+                input.put("state", "on");
+            else
+                input.put("state", "off");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
         RetrofitConnection retrofitConnection = new RetrofitConnection();
-        retrofitConnection.server.postData(input).enqueue(new Callback<String>() {
+        retrofitConnection.server.postData(input).enqueue(new Callback<JSONObject>() {
 
             @Override
-            public void onResponse(Call<String> call, Response<String> response) {
+            public void onResponse(Call<JSONObject> call, Response<JSONObject> response) {
                 if(response.isSuccessful()) {
                     info.setText("onResponse() - isSuccessful() true\n\n");
-                    info.append("body : " + response.body() + "\n");
-                    info.append("code : " + response.code() + "\n");
-                    info.append("message : " + response.message() + "\n");
+                    info.append("response : " + response);
                 }
                 else {
-                    info.setText(currentTime() + "\n\n" + "onResponse() - isSuccessful() false\n\n");
-                    info.append("body : " + response.body() + "\n");
-                    info.append("code : " + response.code() + "\n");
-                    info.append("message : " + response.message() + "\n");
+                    info.setText("onResponse() - isSuccessful() false\n\n");
+                    info.append("response : " + response);
                 }
             }
 
             @Override
-            public void onFailure(Call<String> call, Throwable t) {
-                info.setText(currentTime() + "\n\n" + "onFailure\n\n");
+            public void onFailure(Call<JSONObject> call, Throwable t) {
+                info.setText("onFailure\n\n");
                 info.append(t.toString());
             }
 
