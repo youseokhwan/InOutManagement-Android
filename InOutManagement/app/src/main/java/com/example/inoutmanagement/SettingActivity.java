@@ -10,6 +10,12 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.JsonObject;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class SettingActivity extends Activity {
 
     TextView homeWifiList, currentWifiInfo;
@@ -81,7 +87,7 @@ public class SettingActivity extends Activity {
     }
 
     /**
-     * 현재 연결된 Wi-Fi를 Home Wi-Fi로 추가
+     * 현재 연결된 Wi-Fi를 Home Wi-Fi로 추가 + POST
      */
     public void addHomeWifi() {
         String data = appData.getString("homeWifiList", "");
@@ -107,15 +113,77 @@ public class SettingActivity extends Activity {
         SharedPreferences.Editor editor = appData.edit();
         editor.putString("homeWifiList", data);
         editor.apply();
+
+        // POST(getcheck/wifi/reg-home)
+        JsonObject userinfo = new JsonObject();
+        userinfo.addProperty("id", MainActivity.getCurrentId());
+
+        JsonObject wifiinfo = new JsonObject();
+        wifiinfo.addProperty("wifi_home", data);
+
+        JsonObject input = new JsonObject();
+        input.add("userinfo", userinfo);
+        input.add("wifiinfo", wifiinfo);
+
+        RetrofitConnection retrofitConnection = new RetrofitConnection();
+        retrofitConnection.server.regHomeWifi(input).enqueue(new Callback<JsonObject>() {
+
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if(response.isSuccessful()) {
+                    Toast.makeText(getApplicationContext(), "등록 성공", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    Toast.makeText(getApplicationContext(), "오류: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Toast.makeText(getApplicationContext(), t.toString(), Toast.LENGTH_SHORT).show();
+            }
+
+        });
     }
 
     /**
-     * 등록된 Home Wi-Fi 모두 삭제
+     * 등록된 Home Wi-Fi 모두 삭제 + POST
      */
     public void clearHomeWifiList() {
         SharedPreferences.Editor editor = appData.edit();
         editor.putString("homeWifiList", "");
         editor.apply();
+
+        // POST(getcheck/wifi/reg-home)
+        JsonObject userinfo = new JsonObject();
+        userinfo.addProperty("id", MainActivity.getCurrentId());
+
+        JsonObject wifiinfo = new JsonObject();
+        wifiinfo.addProperty("wifi_home", "no home-wifi");
+
+        JsonObject input = new JsonObject();
+        input.add("userinfo", userinfo);
+        input.add("wifiinfo", wifiinfo);
+
+        RetrofitConnection retrofitConnection = new RetrofitConnection();
+        retrofitConnection.server.regHomeWifi(input).enqueue(new Callback<JsonObject>() {
+
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if(response.isSuccessful()) {
+                    Toast.makeText(getApplicationContext(), "등록 성공", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    Toast.makeText(getApplicationContext(), "오류: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Toast.makeText(getApplicationContext(), t.toString(), Toast.LENGTH_SHORT).show();
+            }
+
+        });
     }
 
     /**

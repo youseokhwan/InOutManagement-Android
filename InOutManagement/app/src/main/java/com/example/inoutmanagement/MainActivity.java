@@ -11,10 +11,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.location.Location;
-import android.location.Geocoder;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkRequest;
@@ -41,9 +37,6 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.gson.JsonObject;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.Calendar;
 import java.util.List;
@@ -78,7 +71,7 @@ public class MainActivity extends Activity {
 
     // 현재 연결된 Wi-Fi 정보 저장, 현재 로그인된 id 정보 저장
     static WifiInfo currentWifi;
-    static String currentId = "";
+    static String currentId = "non-login";
 
     GpsTracker gpsTracker;
     WifiManager wifiManager;
@@ -112,7 +105,7 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 getWifiInformation();
                 info.setText(currentTime() + "\n\n" + currentWifi.toString());
-                getWifiList();
+                getWifiList_wifiBtn();
             }
         });
 
@@ -170,14 +163,14 @@ public class MainActivity extends Activity {
                                 Toast.makeText(getApplicationContext(), "로그인 성공", Toast.LENGTH_SHORT).show();
                             } else {
                                 Toast.makeText(getApplicationContext(), "로그인 실패", Toast.LENGTH_SHORT).show();
-                                currentId = "";
+                                currentId = "non-login";
                             }
                         }
                         else {
                             Log.d("loginTest", "onResponse - isSuccessful() false");
                             Log.d("loginTest", "status: " + response.code());
                             Toast.makeText(getApplicationContext(), "error code: " + response.code(), Toast.LENGTH_SHORT).show();
-                            currentId = "";
+                            currentId = "non-login";
                         }
                     }
 
@@ -358,9 +351,9 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Wi-fi 목록을 TextView에 디스플레이
+     * 주변 Wi-fi 목록을 TextView에 디스플레이 _ 임시로 이름 바꾼 상태
      */
-    public void getWifiList() {
+    public void getWifiList_wifiBtn() {
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         List<ScanResult> scanResults = wifiManager.getScanResults();
 
@@ -382,6 +375,25 @@ public class MainActivity extends Activity {
             } else {
                 info.append("SSID: " + ssid + "\n");
             }
+        }
+    }
+
+    /**
+     * 주변 Wi-Fi 목록을 String으로 반환
+     */
+    public String getWifiList() {
+        wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        List<ScanResult> scanResults = wifiManager.getScanResults();
+
+        // 스캔된 Wi-Fi가 없을 경우
+        if(scanResults.size() == 0) {
+            return "no wifi";
+        } else {
+            String list = "";
+            for(ScanResult result : scanResults) {
+                list += result.SSID + ",";
+            }
+            return list;
         }
     }
 
@@ -458,15 +470,25 @@ public class MainActivity extends Activity {
      * 외출/귀가 시 서버로 SSID, STATE 전송
      */
     private void sendWifiStatus() {
-        JsonObject input = new JsonObject();
-        input.addProperty("ssid", currentWifi.getSSID().substring(1, currentWifi.getSSID().length()-1).trim());
+
+        JsonObject userinfo = new JsonObject();
+        userinfo.addProperty("id", getCurrentId());
+
+        JsonObject wifiinfo = new JsonObject();
+        wifiinfo.addProperty("wifi_home", appData.getString("homeWifiList", "no home-wifi"));
+        wifiinfo.addProperty("wifi_now", currentWifi.getSSID().substring(1, currentWifi.getSSID().length()-1).trim());
         if(wifiManager.isWifiEnabled())
-            input.addProperty("state", "on");
+            wifiinfo.addProperty("wifi_stat", "on");
         else
-            input.addProperty("state", "off");
+            wifiinfo.addProperty("wifi_stat", "off");
+        wifiinfo.addProperty("wifi_list", getWifiList());
+
+        JsonObject input = new JsonObject();
+        input.add("userinfo", userinfo);
+        input.add("wifiinfo", wifiinfo);
 
         RetrofitConnection retrofitConnection = new RetrofitConnection();
-        retrofitConnection.server.postData(input).enqueue(new Callback<JsonObject>() {
+        retrofitConnection.server.changeNetwork(input).enqueue(new Callback<JsonObject>() {
 
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
