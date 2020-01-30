@@ -76,8 +76,9 @@ public class MainActivity extends Activity {
     EditText idEdt, passwordEdt;
     Button loginBtn;
 
-    // 현재 연결된 Wi-Fi 정보 저장
+    // 현재 연결된 Wi-Fi 정보 저장, 현재 로그인된 id 정보 저장
     static WifiInfo currentWifi;
+    static String currentId = "";
 
     GpsTracker gpsTracker;
     WifiManager wifiManager;
@@ -151,34 +152,37 @@ public class MainActivity extends Activity {
                 String id = idEdt.getText().toString().trim();
                 String password = passwordEdt.getText().toString().trim();
 
-                Log.d("loginTest", "id: " + id + ", pw: " + password);
+                currentId = id;
 
                 // post 전송
-                JSONObject input = new JSONObject();
-                try {
-                    input.put("id", id);
-                    input.put("state", password);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                JsonObject input = new JsonObject();
+
+                input.addProperty("id", id);
+                input.addProperty("pwd", password);
 
                 RetrofitConnection retrofitConnection = new RetrofitConnection();
-                retrofitConnection.server.login(input).enqueue(new Callback<JSONObject>() {
+                retrofitConnection.server.login(input).enqueue(new Callback<JsonObject>() {
 
                     @Override
-                    public void onResponse(Call<JSONObject> call, Response<JSONObject> response) {
+                    public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                         if(response.isSuccessful()) {
-                            Log.d("loginTest", "onResponse - isSuccessful() true");
-                            Log.d("loginTest", "status: " + response.code());
+                            if(response.code() == 200) {
+                                Toast.makeText(getApplicationContext(), "로그인 성공", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(getApplicationContext(), "로그인 실패", Toast.LENGTH_SHORT).show();
+                                currentId = "";
+                            }
                         }
                         else {
                             Log.d("loginTest", "onResponse - isSuccessful() false");
                             Log.d("loginTest", "status: " + response.code());
+                            Toast.makeText(getApplicationContext(), "error code: " + response.code(), Toast.LENGTH_SHORT).show();
+                            currentId = "";
                         }
                     }
 
                     @Override
-                    public void onFailure(Call<JSONObject> call, Throwable t) {
+                    public void onFailure(Call<JsonObject> call, Throwable t) {
                         Log.d("loginTest", "onFailure");
                         Log.d("loginTest", t.toString());
                     }
@@ -454,34 +458,30 @@ public class MainActivity extends Activity {
      * 외출/귀가 시 서버로 SSID, STATE 전송
      */
     private void sendWifiStatus() {
-        JSONObject input = new JSONObject();
-        try {
-            input.put("ssid", currentWifi.getSSID().substring(1, currentWifi.getSSID().length()-1).trim());
-            if(wifiManager.isWifiEnabled())
-                input.put("state", "on");
-            else
-                input.put("state", "off");
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        JsonObject input = new JsonObject();
+        input.addProperty("ssid", currentWifi.getSSID().substring(1, currentWifi.getSSID().length()-1).trim());
+        if(wifiManager.isWifiEnabled())
+            input.addProperty("state", "on");
+        else
+            input.addProperty("state", "off");
 
         RetrofitConnection retrofitConnection = new RetrofitConnection();
-        retrofitConnection.server.postData(input).enqueue(new Callback<JSONObject>() {
+        retrofitConnection.server.postData(input).enqueue(new Callback<JsonObject>() {
 
             @Override
-            public void onResponse(Call<JSONObject> call, Response<JSONObject> response) {
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 if(response.isSuccessful()) {
                     info.setText("onResponse() - isSuccessful() true\n\n");
-                    info.append("response : " + response);
+                    info.append("response : " + response.body());
                 }
                 else {
                     info.setText("onResponse() - isSuccessful() false\n\n");
-                    info.append("response : " + response);
+                    info.append("response : " + response.body());
                 }
             }
 
             @Override
-            public void onFailure(Call<JSONObject> call, Throwable t) {
+            public void onFailure(Call<JsonObject> call, Throwable t) {
                 info.setText("onFailure\n\n");
                 info.append(t.toString());
             }
@@ -600,6 +600,13 @@ public class MainActivity extends Activity {
      */
     public static String getCurrentWifiBSSID() {
         return currentWifi.getBSSID();
+    }
+
+    /**
+     * 현재 로그인 된 User ID 반환
+     */
+    public static String getCurrentId() {
+        return currentId;
     }
 
     /**
