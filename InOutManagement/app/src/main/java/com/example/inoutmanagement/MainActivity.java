@@ -387,13 +387,13 @@ public class MainActivity extends Activity {
 
         // 스캔된 Wi-Fi가 없을 경우
         if(scanResults.size() == 0) {
-            return "no wifi";
+            return "[]";
         } else {
-            String list = "";
+            String list = "[";
             for(ScanResult result : scanResults) {
-                list += result.SSID + ",";
+                list += result.SSID + ", ";
             }
-            return list;
+            return list.substring(0, list.length()-2) + "]";
         }
     }
 
@@ -481,6 +481,7 @@ public class MainActivity extends Activity {
             wifiinfo.addProperty("wifi_stat", "on");
         else
             wifiinfo.addProperty("wifi_stat", "off");
+//        wifiinfo.addProperty("wifi_list", getWifiList());
         wifiinfo.addProperty("wifi_list", getWifiList());
 
         JsonObject input = new JsonObject();
