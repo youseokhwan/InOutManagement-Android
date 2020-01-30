@@ -31,6 +31,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -71,6 +72,10 @@ public class MainActivity extends Activity {
     WebView webView;
     WebSettings webSettings;
 
+    // LoginView
+    EditText idEdt, passwordEdt;
+    Button loginBtn;
+
     // 현재 연결된 Wi-Fi 정보 저장
     static WifiInfo currentWifi;
 
@@ -91,10 +96,13 @@ public class MainActivity extends Activity {
         setWebView();
 
         info = findViewById(R.id.info);
+        idEdt = findViewById(R.id.idEdt);
         gpsBtn = findViewById(R.id.gpsBtn);
         postBtn = findViewById(R.id.postBtn);
         wifiBtn = findViewById(R.id.wifiBtn);
+        loginBtn = findViewById(R.id.loginBtn);
         settingBtn = findViewById(R.id.settingBtn);
+        passwordEdt = findViewById(R.id.passwordEdt);
         bluetoothBtn = findViewById(R.id.bluetoothBtn);
         appData = getSharedPreferences("appData", MODE_PRIVATE);
 
@@ -136,6 +144,49 @@ public class MainActivity extends Activity {
             }
         });
 
+        // 로그인 버튼 클릭 시, 서버로 id, password POST로 전송
+        loginBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String id = idEdt.getText().toString().trim();
+                String password = passwordEdt.getText().toString().trim();
+
+                Log.d("loginTest", "id: " + id + ", pw: " + password);
+
+                // post 전송
+                JSONObject input = new JSONObject();
+                try {
+                    input.put("id", id);
+                    input.put("state", password);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                RetrofitConnection retrofitConnection = new RetrofitConnection();
+                retrofitConnection.server.login(input).enqueue(new Callback<JSONObject>() {
+
+                    @Override
+                    public void onResponse(Call<JSONObject> call, Response<JSONObject> response) {
+                        if(response.isSuccessful()) {
+                            Log.d("loginTest", "onResponse - isSuccessful() true");
+                            Log.d("loginTest", "status: " + response.code());
+                        }
+                        else {
+                            Log.d("loginTest", "onResponse - isSuccessful() false");
+                            Log.d("loginTest", "status: " + response.code());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<JSONObject> call, Throwable t) {
+                        Log.d("loginTest", "onFailure");
+                        Log.d("loginTest", t.toString());
+                    }
+
+                });
+            }
+        });
+
         // 위치 권한 확인
         checkLocationPermission();
     }
@@ -170,6 +221,12 @@ public class MainActivity extends Activity {
         ts2.setContent(R.id.webView);
         ts2.setIndicator("Web");
         tabHost.addTab(ts2);
+
+        // WebView 탭
+        TabHost.TabSpec ts3 = tabHost.newTabSpec("Tab Spec 3");
+        ts3.setContent(R.id.loginView);
+        ts3.setIndicator("Login");
+        tabHost.addTab(ts3);
     }
 
     /**

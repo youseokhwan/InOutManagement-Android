@@ -13,4 +13,8 @@ public interface RetrofitInterface {
     @POST("getcheck/wifi")
     Call<JSONObject> postData(@Body JSONObject data);
 
+    @Headers({"Content-Type: application/json", "Accept: application/json"})
+    @POST("login")
+    Call<JSONObject> login(@Body JSONObject data);
+
 }
