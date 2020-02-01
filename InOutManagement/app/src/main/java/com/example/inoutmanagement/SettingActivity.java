@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import retrofit2.Call;
@@ -70,7 +71,7 @@ public class SettingActivity extends Activity {
      */
     public void printHomeWifiList() {
         String data = appData.getString("homeWifiList", "");
-        String[] wifiList = data.split(";");
+        String[] wifiList = data.split(",");
 
         // 등록된 Wi-Fi가 없을 경우
         if(data.equals(""))
@@ -91,7 +92,7 @@ public class SettingActivity extends Activity {
      */
     public void addHomeWifi() {
         String data = appData.getString("homeWifiList", "");
-        String[] wifiList = data.split(";");
+        String[] wifiList = data.split(",");
 
         // Wi-Fi에 연결된 상태가 아닐 경우 Toast 띄우기
         if(MainActivity.getCurrentWifiSSID().equals("<unknown ssid>")) {
@@ -107,8 +108,8 @@ public class SettingActivity extends Activity {
             }
         }
 
-        data += MainActivity.getCurrentWifiSSID() + ";";
-        data += MainActivity.getCurrentWifiBSSID() + ";";
+        data += MainActivity.getCurrentWifiSSID() + ",";
+        data += MainActivity.getCurrentWifiBSSID() + ",";
 
         SharedPreferences.Editor editor = appData.edit();
         editor.putString("homeWifiList", data);
@@ -119,7 +120,13 @@ public class SettingActivity extends Activity {
         userinfo.addProperty("id", MainActivity.getCurrentId());
 
         JsonObject wifiinfo = new JsonObject();
-        wifiinfo.addProperty("wifi_home", data);
+        JsonArray homeWifiList = new JsonArray();
+
+        String[] wifiData = appData.getString("homeWifiList", "no home-wifi").split(",");
+        for(int i = 0; i < wifiData.length; i+=2) {
+            homeWifiList.add(wifiData[i].substring(1, wifiData[i].length()-1).trim());
+        }
+        wifiinfo.add("wifi_home", homeWifiList);
 
         JsonObject input = new JsonObject();
         input.add("userinfo", userinfo);
@@ -159,7 +166,7 @@ public class SettingActivity extends Activity {
         userinfo.addProperty("id", MainActivity.getCurrentId());
 
         JsonObject wifiinfo = new JsonObject();
-        wifiinfo.addProperty("wifi_home", "no home-wifi");
+        wifiinfo.addProperty("wifi_home", "[]");
 
         JsonObject input = new JsonObject();
         input.add("userinfo", userinfo);

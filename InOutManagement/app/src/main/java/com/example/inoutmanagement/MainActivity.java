@@ -36,6 +36,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import java.util.Calendar;
@@ -59,7 +60,7 @@ public class MainActivity extends Activity {
 
     // NativeView
     TextView info;
-    Button wifiBtn, bluetoothBtn, gpsBtn, postBtn, settingBtn;
+    Button wifiBtn, gpsBtn, getBtn, postBtn, settingBtn;
 
     // WebView
     WebView webView;
@@ -92,12 +93,12 @@ public class MainActivity extends Activity {
         info = findViewById(R.id.info);
         idEdt = findViewById(R.id.idEdt);
         gpsBtn = findViewById(R.id.gpsBtn);
+        getBtn = findViewById(R.id.getBtn);
         postBtn = findViewById(R.id.postBtn);
         wifiBtn = findViewById(R.id.wifiBtn);
         loginBtn = findViewById(R.id.loginBtn);
         settingBtn = findViewById(R.id.settingBtn);
         passwordEdt = findViewById(R.id.passwordEdt);
-        bluetoothBtn = findViewById(R.id.bluetoothBtn);
         appData = getSharedPreferences("appData", MODE_PRIVATE);
 
         wifiBtn.setOnClickListener(new View.OnClickListener() {
@@ -109,17 +110,17 @@ public class MainActivity extends Activity {
             }
         });
 
-        bluetoothBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getBluetoothInformation();
-            }
-        });
-
         gpsBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 getLocation();
+            }
+        });
+
+        getBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getNetworkInfo();
             }
         });
 
@@ -387,39 +388,18 @@ public class MainActivity extends Activity {
 
         // 스캔된 Wi-Fi가 없을 경우
         if(scanResults.size() == 0) {
-            return "[]";
-        } else {
-            String list = "[";
+            return "";
+        }
+        // 스캔된 Wi-Fi가 있을 경우
+        else {
+            String list = "";
             for(ScanResult result : scanResults) {
-                list += result.SSID + ", ";
+                if(!result.SSID.equals("")) {
+                    list += result.SSID + ", ";
+                }
             }
-            return list.substring(0, list.length()-2) + "]";
+            return list.substring(0, list.length()-2);
         }
-    }
-
-    /**
-     * 기기에 블루투스로 연결된 장치들에 대한 정보를 TextView에 디스플레이
-     */
-    private void getBluetoothInformation() {
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        String bluetoothInfo = "";
-
-        if (bluetoothAdapter == null) {
-            bluetoothInfo = "블루투스를 지원하지 않는 기기입니다.";
-        } else if (!bluetoothAdapter.isEnabled()) {
-            bluetoothInfo = "블루투스 기능이 꺼져있습니다.";
-        } else {
-            Set<BluetoothDevice> pairDevices = bluetoothAdapter.getBondedDevices();
-
-            if (pairDevices.size() > 0) {
-                for (BluetoothDevice device : pairDevices)
-                    bluetoothInfo += device.getName().toString() + "\n";
-            } else {
-                bluetoothInfo = "페어링된 블루투스 장치가 없습니다.";
-            }
-        }
-
-        info.setText(currentTime() + "\n\n[페어링된 블루투스 기기 목록]\n" + bluetoothInfo);
     }
 
     /**
@@ -467,6 +447,36 @@ public class MainActivity extends Activity {
     }
 
     /**
+     * get 예제
+     */
+    private void getNetworkInfo() {
+
+        RetrofitConnection retrofitConnection = new RetrofitConnection();
+        retrofitConnection.server.getNetwork().enqueue(new Callback<JsonObject>() {
+
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if(response.isSuccessful()) {
+                    info.setText("onResponse() - isSuccessful() true\n\n");
+                    info.append("response : " + response.body());
+                }
+                else {
+                    info.setText("onResponse() - isSuccessful() false\n\n");
+                    info.append("response : " + response.body());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                info.setText("onFailure\n\n");
+                info.append(t.toString());
+            }
+
+        });
+
+    }
+
+    /**
      * 외출/귀가 시 서버로 SSID, STATE 전송
      */
     private void sendWifiStatus() {
@@ -475,14 +485,31 @@ public class MainActivity extends Activity {
         userinfo.addProperty("id", getCurrentId());
 
         JsonObject wifiinfo = new JsonObject();
-        wifiinfo.addProperty("wifi_home", appData.getString("homeWifiList", "no home-wifi"));
+
+        // wfii_home
+        JsonArray homeWifiList = new JsonArray();
+        String[] data = appData.getString("homeWifiList", "[]").split(",");
+        for(int i = 0; i < data.length; i+=2) {
+            homeWifiList.add(data[i].substring(1, data[i].length()-1).trim());
+        }
+        wifiinfo.add("wifi_home", homeWifiList);
+
+        // wifi_now
         wifiinfo.addProperty("wifi_now", currentWifi.getSSID().substring(1, currentWifi.getSSID().length()-1).trim());
+
+        // wifi_stat
         if(wifiManager.isWifiEnabled())
             wifiinfo.addProperty("wifi_stat", "on");
         else
             wifiinfo.addProperty("wifi_stat", "off");
-//        wifiinfo.addProperty("wifi_list", getWifiList());
-        wifiinfo.addProperty("wifi_list", getWifiList());
+
+        // wifi_list
+        JsonArray scanWifiList = new JsonArray();
+        data = getWifiList().split(",");
+        for (String str : data) {
+            scanWifiList.add(str.trim());
+        }
+        wifiinfo.add("wifi_list", scanWifiList);
 
         JsonObject input = new JsonObject();
         input.add("userinfo", userinfo);
@@ -544,7 +571,7 @@ public class MainActivity extends Activity {
                                 createNotification("네트워크 알림", "외출: 셀룰러 데이터로 연결되었습니다.");
                                 sendWifiStatus();
                             }
-                            // 다른 Wi-Fi가 연결된 경우
+                            // Wi-Fi 세기가 충분한 경우
                             else {
                                 // 연결된 Wi-Fi가 Home Wi-Fi인 경우
                                 if(isHomeWifi(currentWifi.getBSSID())) {
