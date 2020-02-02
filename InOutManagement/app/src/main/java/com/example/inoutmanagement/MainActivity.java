@@ -4,10 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -40,9 +37,7 @@ import androidx.core.content.ContextCompat;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import java.util.Calendar;
 import java.util.List;
-import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -62,7 +57,7 @@ public class MainActivity extends Activity {
     Button loginBtn;
 
     // SettingView
-    TextView homeWifiList;
+    TextView homeWifiList, scanWifiList;
     Button regHomeWifiBtn, delHomeWifiBtn, finishBtn;
 
     // WebView
@@ -96,6 +91,7 @@ public class MainActivity extends Activity {
 
         // SettingView
         homeWifiList = findViewById(R.id.homeWifiList);
+        scanWifiList = findViewById(R.id.scanWifiList);
         regHomeWifiBtn = findViewById(R.id.regHomeWifiBtn);
         delHomeWifiBtn = findViewById(R.id.delHomeWifiBtn);
         finishBtn = findViewById(R.id.finishBtn);
@@ -148,8 +144,8 @@ public class MainActivity extends Activity {
                                 InputMethodManager inputMethodManager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
                                 inputMethodManager.hideSoftInputFromWindow(passwordEdt.getWindowToken(), 0);
 
-                                // SettingView에 등록된 Home Wi-Fi 목록 표시
-                                printHomeWifiList();
+                                // SettingView에 등록된 Home Wi-Fi 목록과 검색된 Wi-Fi 목록 표시
+                                printWifiList();
 
                                 // SettingView 탭으로 이동
                                 tabHost.setCurrentTab(1);
@@ -180,7 +176,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 addHomeWifi();
-                printHomeWifiList();
+                printWifiList();
             }
         });
 
@@ -189,7 +185,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 clearHomeWifiList();
-                printHomeWifiList();
+                printWifiList();
             }
         });
 
@@ -623,22 +619,52 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 현재 등록된 Home Wi-Fi 목록을 표시
+     * SettingView에 현재 등록된 Home Wi-Fi 목록과 검색된 Wi-Fi 목록 표시
      */
-    public void printHomeWifiList() {
+    public void printWifiList() {
         String data = appData.getString("homeWifiList", "");
-        String[] wifiList = data.split(",");
+        String[] homeWifi = data.split(",");
+        String[] scanWifi = getWifiList().split(",");
 
         // 등록된 Wi-Fi가 없을 경우
         if(data.equals(""))
             homeWifiList.setText("등록된 Home Wi-Fi가 없습니다.\n");
-            // 등록된 Wi-Fi가 1개 이상일 경우
+        // 등록된 Wi-Fi가 1개 이상일 경우
         else {
             homeWifiList.setText("");
-            for(int i = 0; i < wifiList.length; i++) {
+            for(int i = 0; i < homeWifi.length; i++) {
                 homeWifiList.append((i+1)/2+1 + ". ");
-                homeWifiList.append(wifiList[i++] + " ");
-                homeWifiList.append("(" + wifiList[i] + ")\n");
+                homeWifiList.append(homeWifi[i++] + " ");
+                homeWifiList.append("(" + homeWifi[i] + ")\n");
+            }
+        }
+
+        // 검색된 Wi-Fi가 없을 경우
+        if(scanWifi.length == 0) {
+            scanWifiList.setText("검색된 주변 Wi-Fi가 없습니다.\n");
+        }
+        // 검색된 Wi-Fi가 1개 이상일 경우
+        else {
+            scanWifiList.setText("");
+            for(String scan : scanWifi) {
+                for(int i = 0; i < homeWifi.length; i+=2) {
+                    if(homeWifi[i].length() == 0)
+                        break;
+
+                    String _scan = scan.trim();
+                    String _home = homeWifi[i].substring(1, homeWifi[i].length()-1).trim();
+
+                    // Home Wi-Fi로 등록된 경우
+                    if(_scan.equals(_home)) {
+                        SpannableStringBuilder builder = new SpannableStringBuilder(_scan);
+                        builder.setSpan(new ForegroundColorSpan(Color.parseColor("#5F00FF")), 0, _scan.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        scanWifiList.append(builder);
+                        scanWifiList.append("\n");
+                        break;
+                    } else {
+                        scanWifiList.append(_scan + "\n");
+                    }
+                }
             }
         }
     }
