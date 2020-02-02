@@ -23,85 +23,7 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1">
 
-                <LinearLayout
-                    android:id="@+id/nativeView"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:padding="20dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="20dp"
-                        android:gravity="center"
-                        android:text="InOutManagement"
-                        android:textSize="20sp"
-                        android:textColor="@android:color/black" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="20dp"
-                        android:gravity="center">
-
-                        <Button
-                            android:id="@+id/wifiBtn"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Wi-fi" />
-
-                        <Button
-                            android:id="@+id/gpsBtn"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="GPS" />
-
-                        <Button
-                            android:id="@+id/getBtn"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Get" />
-
-                        <Button
-                            android:id="@+id/postBtn"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Post" />
-
-                        <Button
-                            android:id="@+id/settingBtn"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="설정" />
-
-                    </LinearLayout>
-
-                    <ScrollView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-
-                        <TextView
-                            android:id="@+id/info"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:textColor="@android:color/black" />
-
-                    </ScrollView>
-
-                </LinearLayout>
-
-                <WebView
-                    android:id="@+id/webView"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-                </WebView>
-
+                <!-- 0. LoginView -->
                 <LinearLayout
                     android:id="@+id/loginView"
                     android:layout_width="match_parent"
@@ -138,12 +60,79 @@
 
                 </LinearLayout>
 
+                <!-- 1. SettingView -->
+                <LinearLayout
+                    android:id="@+id/settingView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="20dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="20dp"
+                        android:gravity="center"
+                        android:text="InOutManagement"
+                        android:textSize="20sp"
+                        android:textColor="@android:color/black" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="[현재 등록된 Home Wi-Fi 목록]"
+                        android:textColor="@android:color/black" />
+
+                    <TextView
+                        android:id="@+id/homeWifiList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/black" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <Button
+                            android:id="@+id/regHomeWifiBtn"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="현재 Wi-Fi를 Home Wi-Fi로 등록" />
+
+                        <Button
+                            android:id="@+id/delHomeWifiBtn"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Home Wi-Fi 모두 지우기" />
+
+                        <Button
+                            android:id="@+id/finishBtn"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Home Wi-Fi 설정 완료" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- 2. WebView -->
+                <WebView
+                    android:id="@+id/webView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                </WebView>
+
             </FrameLayout>
 
             <TabWidget
                 android:id="@android:id/tabs"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="0dp" />
 
         </LinearLayout>
 

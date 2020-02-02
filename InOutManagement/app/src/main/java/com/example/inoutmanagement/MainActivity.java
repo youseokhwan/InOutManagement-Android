@@ -23,6 +23,7 @@ import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -50,25 +51,23 @@ import retrofit2.Response;
 /**
  * 이탈 관리 및 에너지 정보 관리 App
  * 2019-12-16(월)
- *
- * @author youseokhwan
  */
 public class MainActivity extends Activity {
 
     // TabView
     TabHost tabHost;
 
-    // NativeView
-    TextView info;
-    Button wifiBtn, gpsBtn, getBtn, postBtn, settingBtn;
+    // LoginView
+    EditText idEdt, passwordEdt;
+    Button loginBtn;
+
+    // SettingView
+    TextView homeWifiList;
+    Button regHomeWifiBtn, delHomeWifiBtn, finishBtn;
 
     // WebView
     WebView webView;
     WebSettings webSettings;
-
-    // LoginView
-    EditText idEdt, passwordEdt;
-    Button loginBtn;
 
     // 현재 연결된 Wi-Fi 정보 저장, 현재 로그인된 id 정보 저장
     static WifiInfo currentWifi;
@@ -90,65 +89,47 @@ public class MainActivity extends Activity {
         // WebView 설정
         setWebView();
 
-        info = findViewById(R.id.info);
+        // LoginView
         idEdt = findViewById(R.id.idEdt);
-        gpsBtn = findViewById(R.id.gpsBtn);
-        getBtn = findViewById(R.id.getBtn);
-        postBtn = findViewById(R.id.postBtn);
-        wifiBtn = findViewById(R.id.wifiBtn);
-        loginBtn = findViewById(R.id.loginBtn);
-        settingBtn = findViewById(R.id.settingBtn);
         passwordEdt = findViewById(R.id.passwordEdt);
+        loginBtn = findViewById(R.id.loginBtn);
+
+        // SettingView
+        homeWifiList = findViewById(R.id.homeWifiList);
+        regHomeWifiBtn = findViewById(R.id.regHomeWifiBtn);
+        delHomeWifiBtn = findViewById(R.id.delHomeWifiBtn);
+        finishBtn = findViewById(R.id.finishBtn);
+
+        // 기기에 저장된 로컬 데이터 불러오기
         appData = getSharedPreferences("appData", MODE_PRIVATE);
 
-        wifiBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getWifiInformation();
-                info.setText(currentTime() + "\n\n" + currentWifi.toString());
-                getWifiList_wifiBtn();
-            }
-        });
+        // GET getcheck/wifi
+//        getBtn.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                getNetworkInfo();
+//            }
+//        });
 
-        gpsBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getLocation();
-            }
-        });
+        // POST getcheck/wifi
+//        postBtn.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                sendWifiStatus();
+//            }
+//        });
 
-        getBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getNetworkInfo();
-            }
-        });
-
-        postBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendWifiStatus();
-            }
-        });
-
-        settingBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(), SettingActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        // 로그인 버튼 클릭 시, 서버로 id, password POST로 전송
+        // 로그인 버튼 클릭 시 서버로 id, password 전송(POST)
         loginBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String id = idEdt.getText().toString().trim();
                 String password = passwordEdt.getText().toString().trim();
 
+                // currentId 변수에 저장
                 currentId = id;
 
-                // post 전송
+                // POST 전송
                 JsonObject input = new JsonObject();
 
                 input.addProperty("id", id);
@@ -161,7 +142,17 @@ public class MainActivity extends Activity {
                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                         if(response.isSuccessful()) {
                             if(response.code() == 200) {
-                                Toast.makeText(getApplicationContext(), "로그인 성공", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getApplicationContext(), "로그인 성공! Home Wi-Fi를 설정해주세요", Toast.LENGTH_SHORT).show();
+
+                                // 로그인 성공하면 안드로이드 키보드 숨김
+                                InputMethodManager inputMethodManager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+                                inputMethodManager.hideSoftInputFromWindow(passwordEdt.getWindowToken(), 0);
+
+                                // SettingView에 등록된 Home Wi-Fi 목록 표시
+                                printHomeWifiList();
+
+                                // SettingView 탭으로 이동
+                                tabHost.setCurrentTab(1);
                             } else {
                                 Toast.makeText(getApplicationContext(), "로그인 실패", Toast.LENGTH_SHORT).show();
                                 currentId = "non-login";
@@ -170,7 +161,6 @@ public class MainActivity extends Activity {
                         else {
                             Log.d("loginTest", "onResponse - isSuccessful() false");
                             Log.d("loginTest", "status: " + response.code());
-                            Toast.makeText(getApplicationContext(), "error code: " + response.code(), Toast.LENGTH_SHORT).show();
                             currentId = "non-login";
                         }
                     }
@@ -182,6 +172,43 @@ public class MainActivity extends Activity {
                     }
 
                 });
+            }
+        });
+
+        // SettingView의 regHomeWifiBtn - 현재 연결된 Wi-Fi를 Home Wi-Fi로 등록
+        regHomeWifiBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                addHomeWifi();
+                printHomeWifiList();
+            }
+        });
+
+        // SettingView의 delHomeWifiBtn - Home Wi-Fi 모두 지우기
+        delHomeWifiBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                clearHomeWifiList();
+                printHomeWifiList();
+            }
+        });
+
+        // SettingView의 finishBtn - Home Wi-Fi 설정 완료하고 WebView로 진입
+        finishBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // isFirstRun 변수를 false로 변경하여 다음 실행부터 바로 WebView로 진입하도록 설정
+                SharedPreferences.Editor editor = appData.edit();
+                editor.putBoolean("isFirstRun", false);
+                editor.apply();
+
+                Toast.makeText(getApplicationContext(), "Home Wi-Fi 설정 완료!", Toast.LENGTH_SHORT).show();
+
+                // WebView 진입
+                tabHost.setCurrentTab(2);
+
+                // 네트워크 감지 시작
+                startNetworkDetection();
             }
         });
 
@@ -208,22 +235,22 @@ public class MainActivity extends Activity {
         tabHost = findViewById(R.id.tabHost);
         tabHost.setup();
 
-        // Native 탭
+        // Login 탭
         TabHost.TabSpec ts1 = tabHost.newTabSpec("Tab Spec 1");
-        ts1.setContent(R.id.nativeView);
-        ts1.setIndicator("Native");
+        ts1.setContent(R.id.loginView);
+        ts1.setIndicator("Login");
         tabHost.addTab(ts1);
 
-        // WebView 탭
+        // Setting 탭
         TabHost.TabSpec ts2 = tabHost.newTabSpec("Tab Spec 2");
-        ts2.setContent(R.id.webView);
-        ts2.setIndicator("Web");
+        ts2.setContent(R.id.settingView);
+        ts2.setIndicator("Setting");
         tabHost.addTab(ts2);
 
         // WebView 탭
         TabHost.TabSpec ts3 = tabHost.newTabSpec("Tab Spec 3");
-        ts3.setContent(R.id.loginView);
-        ts3.setIndicator("Login");
+        ts3.setContent(R.id.webView);
+        ts3.setIndicator("Web");
         tabHost.addTab(ts3);
     }
 
@@ -263,18 +290,16 @@ public class MainActivity extends Activity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 int backgroundPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION);
 
-                // BACKGROUND 권한이 있으면 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+                // BACKGROUND 권한이 있으면 이후 로직 진행
                 if (backgroundPermission == PackageManager.PERMISSION_GRANTED) {
-                    startNetworkDetection();
                     checkFirstRun();
                 }
                 // BACKGROUND 권한이 없으면 요청
                 else
                     ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 2);
             }
-            // 안드로이드 10 미만인 경우 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+            // 안드로이드 10 미만인 경우 이후 로직 진행
             else {
-                startNetworkDetection();
                 checkFirstRun();
             }
         }
@@ -299,47 +324,44 @@ public class MainActivity extends Activity {
                     // 안드로이드 10 이상인 경우 BACKGROUND 권한도 필요
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 2);
-                        // 안드로이드 10 미만인 경우 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+                        // 안드로이드 10 미만인 경우 이후 로직 진행
                     else {
-                        startNetworkDetection();
                         checkFirstRun();
                     }
                 }
-                // FINE 권한이 거부된 경우 TextView 수정
-                else
-                    info.setText("위치 권한을 허용해주세요.");
+                // FINE 권한이 거부된 경우 앱 종료
+                else {
+                    ActivityCompat.finishAffinity(this);
+                }
                 break;
 
             case 2:
-                // BACKGROUND 권한이 허용된 경우 네트워크 감지 시작하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+                // BACKGROUND 권한이 허용된 경우 이후 로직 진행
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    startNetworkDetection();
                     checkFirstRun();
                 }
-                // BACKGROUND 권한이 거부된 경우 TextView 수정
-                else
-                    info.setText("위치 권한을 '앱 사용 중에만 허용'에서 '항상 허용'으로 바꿔주세요.");
+                // BACKGROUND 권한이 거부된 경우 앱 종료
+                else {
+                    ActivityCompat.finishAffinity(this);
+                }
                 break;
         }
     }
 
     /**
-     * 최초 실행인지 판단하고 최초 실행이면 Home Wi-Fi 설정 액티비티로 이동
+     * 권한 설정, 로그인, Home Wi-Fi가 모두 설정돼있으면 다음 실행부터 바로 WebView로 실행되도록 설정
      */
     public void checkFirstRun() {
-        // 최초 실행일 경우
-        if (appData.getBoolean("isFirstRun", true)) {
-            // isFirstRun 변수를 false로 변경
-            SharedPreferences.Editor editor = appData.edit();
-            editor.putBoolean("isFirstRun", false);
-            editor.apply();
+        boolean isFirstRun = appData.getBoolean("isFirstRun", true);
 
-            // 최초 실행 시 Toast 띄우기
-            Toast.makeText(getApplicationContext(), "최초 실행: Home Wi-Fi를 설정해주세요.", Toast.LENGTH_SHORT).show();
-
-            // Home Wi-Fi를 설정하는 화면으로 유도
-            Intent intent = new Intent(getApplicationContext(), SettingActivity.class);
-            startActivity(intent);
+        // 첫 실행이면 로그인 창으로 이동
+        if(isFirstRun) {
+            tabHost.setCurrentTab(0);
+        }
+        // 첫 실행이 아니면 WebView로 이동하고 네트워크 감지 시작
+        else {
+            tabHost.setCurrentTab(2);
+            startNetworkDetection();
         }
     }
 
@@ -349,34 +371,6 @@ public class MainActivity extends Activity {
     public void getWifiInformation() {
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         currentWifi = new WifiInfo(wifiManager.getConnectionInfo());
-    }
-
-    /**
-     * 주변 Wi-fi 목록을 TextView에 디스플레이 _ 임시로 이름 바꾼 상태
-     */
-    public void getWifiList_wifiBtn() {
-        wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        List<ScanResult> scanResults = wifiManager.getScanResults();
-
-        // 검색된 Wi-fi의 개수 출력
-        info.append("\n\n[검색된 Wi-fi 리스트] - " + scanResults.size() + "개\n");
-
-        // 각 Wi-fi의 SSID 출력
-        for (ScanResult result : scanResults) {
-            String ssid = "\"" + result.SSID + "\"";
-
-            // 현재 연결된 Wi-fi와 같은 BSSID일 경우 보라색으로 강조
-            if (result.BSSID.equals(currentWifi.getBSSID())) {
-                SpannableStringBuilder builder = new SpannableStringBuilder(ssid);
-                builder.setSpan(new ForegroundColorSpan(Color.parseColor("#5F00FF")), 0, ssid.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-                info.append("SSID: ");
-                info.append(builder);
-                info.append("\n");
-            } else {
-                info.append("SSID: " + ssid + "\n");
-            }
-        }
     }
 
     /**
@@ -403,51 +397,17 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 현재 시간 반환
-     * @return 현재 시간
-     */
-    private String currentTime() {
-        Calendar calendar = Calendar.getInstance();
-        return "요청 시간: " + calendar.getTime().toString();
-    }
-
-    /**
-     * 위도, 경도 출력
+     * 위도, 경도 출력 -> return 로직이 없으므로 사용하기 전에 메소드 수정하시면 됩니다.
      */
     private void getLocation() {
-//        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//                // TODO: Consider calling
-//                //    Activity#requestPermissions
-//                // here to request the missing permissions, and then overriding
-//                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-//                //                                          int[] grantResults)
-//                // to handle the case where the user grants the permission. See the documentation
-//                // for Activity#requestPermissions for more details.
-//                return;
-//            }
-//        }
-//
-//        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-//
-//        if(location != null) {
-//            info.setText("위도: " + location.getLatitude() + "\n");
-//            info.append("경도: " + location.getLongitude());
-//        } else {
-//            info.setText("location = null");
-//        }
-
         gpsTracker = new GpsTracker(MainActivity.this);
 
         double latitude = gpsTracker.getLatitude();
         double longitude = gpsTracker.getLongitude();
-
-        info.setText("위도: " + latitude + "\n경도: " + longitude);
     }
 
     /**
-     * get 예제
+     * GET getcheck/wifi -> 현재 선언만 돼있고 호출하는 부분은 없습니다.
      */
     private void getNetworkInfo() {
 
@@ -457,19 +417,19 @@ public class MainActivity extends Activity {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 if(response.isSuccessful()) {
-                    info.setText("onResponse() - isSuccessful() true\n\n");
-                    info.append("response : " + response.body());
+                    Log.d("getTest", "onResponse() - isSuccessful() true");
+                    Log.d("getTest", "response.body(): " + response.body());
                 }
                 else {
-                    info.setText("onResponse() - isSuccessful() false\n\n");
-                    info.append("response : " + response.body());
+                    Log.d("getTest", "onResponse() - isSuccessful() false");
+                    Log.d("getTest", "response.body(): " + response.body());
                 }
             }
 
             @Override
             public void onFailure(Call<JsonObject> call, Throwable t) {
-                info.setText("onFailure\n\n");
-                info.append(t.toString());
+                Log.d("getTest", "onFailure()");
+                Log.d("getTest", t.toString());
             }
 
         });
@@ -477,18 +437,17 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 외출/귀가 시 서버로 SSID, STATE 전송
+     * 외출/귀가 시 서버로 SSID, STATE 전송(POST)
      */
     private void sendWifiStatus() {
-
         JsonObject userinfo = new JsonObject();
         userinfo.addProperty("id", getCurrentId());
 
         JsonObject wifiinfo = new JsonObject();
 
-        // wfii_home
+        // wifi_home
         JsonArray homeWifiList = new JsonArray();
-        String[] data = appData.getString("homeWifiList", "[]").split(",");
+        String[] data = appData.getString("homeWifiList", "").split(",");
         for(int i = 0; i < data.length; i+=2) {
             homeWifiList.add(data[i].substring(1, data[i].length()-1).trim());
         }
@@ -521,19 +480,19 @@ public class MainActivity extends Activity {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 if(response.isSuccessful()) {
-                    info.setText("onResponse() - isSuccessful() true\n\n");
-                    info.append("response : " + response.body());
+                    Log.d("postTest", "onResponse() - isSuccessful() true");
+                    Log.d("postTest", "response.body(): " + response.body());
                 }
                 else {
-                    info.setText("onResponse() - isSuccessful() false\n\n");
-                    info.append("response : " + response.body());
+                    Log.d("postTest", "onResponse() - isSuccessful() false");
+                    Log.d("postTest", "response.body(): " + response.body());
                 }
             }
 
             @Override
             public void onFailure(Call<JsonObject> call, Throwable t) {
-                info.setText("onFailure\n\n");
-                info.append(t.toString());
+                Log.d("postTest", "onFailure()");
+                Log.d("postTest", t.toString());
             }
 
         });
@@ -639,20 +598,6 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * SettingActivity에서 currentWifi의 SSID를 얻기 위한 메소드
-     */
-    public static String getCurrentWifiSSID() {
-        return currentWifi.getSSID();
-    }
-
-    /**
-     * SettingActivity에서 currentWifi의 BSSID를 얻기 위한 메소드
-     */
-    public static String getCurrentWifiBSSID() {
-        return currentWifi.getBSSID();
-    }
-
-    /**
      * 현재 로그인 된 User ID 반환
      */
     public static String getCurrentId() {
@@ -666,7 +611,7 @@ public class MainActivity extends Activity {
      */
     public boolean isHomeWifi(String BSSID) {
         String data = appData.getString("homeWifiList", "");
-        String[] wifiList = data.split(";");
+        String[] wifiList = data.split(",");
 
         for(int i = 1; i < wifiList.length; i+=2) {
             if(wifiList[i].equals(BSSID)) {
@@ -675,5 +620,134 @@ public class MainActivity extends Activity {
         }
 
         return false;
+    }
+
+    /**
+     * 현재 등록된 Home Wi-Fi 목록을 표시
+     */
+    public void printHomeWifiList() {
+        String data = appData.getString("homeWifiList", "");
+        String[] wifiList = data.split(",");
+
+        // 등록된 Wi-Fi가 없을 경우
+        if(data.equals(""))
+            homeWifiList.setText("등록된 Home Wi-Fi가 없습니다.\n");
+            // 등록된 Wi-Fi가 1개 이상일 경우
+        else {
+            homeWifiList.setText("");
+            for(int i = 0; i < wifiList.length; i++) {
+                homeWifiList.append((i+1)/2+1 + ". ");
+                homeWifiList.append(wifiList[i++] + " ");
+                homeWifiList.append("(" + wifiList[i] + ")\n");
+            }
+        }
+    }
+
+    /**
+     * 현재 연결된 Wi-Fi를 Home Wi-Fi로 추가 + POST
+     */
+    public void addHomeWifi() {
+        String data = appData.getString("homeWifiList", "");
+        String[] wifiList = data.split(",");
+
+        getWifiInformation();
+
+        // Wi-Fi에 연결된 상태가 아닐 경우 Toast 띄우기
+        if(currentWifi.getSSID().equals("<unknown ssid>")) {
+            Toast.makeText(getApplicationContext(), "Wi-Fi에 연결되어있지 않습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // BSSID를 비교하여 이미 등록된 Wi-Fi일 경우 Toast 띄우고 중복 등록 방지
+        for(int i = 1; i < wifiList.length; i+=2) {
+            if(wifiList[i].equals(currentWifi.getBSSID())) {
+                Toast.makeText(getApplicationContext(), "이미 등록된 Wi-Fi입니다.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        data += currentWifi.getSSID() + ",";
+        data += currentWifi.getBSSID() + ",";
+
+        SharedPreferences.Editor editor = appData.edit();
+        editor.putString("homeWifiList", data);
+        editor.apply();
+
+        // POST(getcheck/wifi/reg-home)
+        JsonObject userinfo = new JsonObject();
+        userinfo.addProperty("id", MainActivity.getCurrentId());
+
+        JsonObject wifiinfo = new JsonObject();
+        JsonArray homeWifiList = new JsonArray();
+
+        String[] wifiData = appData.getString("homeWifiList", "").split(",");
+        for(int i = 0; i < wifiData.length; i+=2) {
+            homeWifiList.add(wifiData[i].substring(1, wifiData[i].length()-1).trim());
+        }
+        wifiinfo.add("wifi_home", homeWifiList);
+
+        JsonObject input = new JsonObject();
+        input.add("userinfo", userinfo);
+        input.add("wifiinfo", wifiinfo);
+
+        RetrofitConnection retrofitConnection = new RetrofitConnection();
+        retrofitConnection.server.regHomeWifi(input).enqueue(new Callback<JsonObject>() {
+
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if(response.isSuccessful()) {
+                    Toast.makeText(getApplicationContext(), "등록 성공", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    Toast.makeText(getApplicationContext(), "오류: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Toast.makeText(getApplicationContext(), t.toString(), Toast.LENGTH_SHORT).show();
+            }
+
+        });
+    }
+
+    /**
+     * 등록된 Home Wi-Fi 모두 삭제
+     */
+    public void clearHomeWifiList() {
+        SharedPreferences.Editor editor = appData.edit();
+        editor.putString("homeWifiList", "");
+        editor.apply();
+
+        // POST(getcheck/wifi/reg-home)
+        JsonObject userinfo = new JsonObject();
+        userinfo.addProperty("id", MainActivity.getCurrentId());
+
+        JsonObject wifiinfo = new JsonObject();
+        wifiinfo.addProperty("wifi_home", "");
+
+        JsonObject input = new JsonObject();
+        input.add("userinfo", userinfo);
+        input.add("wifiinfo", wifiinfo);
+
+        RetrofitConnection retrofitConnection = new RetrofitConnection();
+        retrofitConnection.server.regHomeWifi(input).enqueue(new Callback<JsonObject>() {
+
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if(response.isSuccessful()) {
+                    Toast.makeText(getApplicationContext(), "등록 성공", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    Toast.makeText(getApplicationContext(), "오류: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Toast.makeText(getApplicationContext(), t.toString(), Toast.LENGTH_SHORT).show();
+            }
+
+        });
     }
 }
