@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -71,7 +72,7 @@ public class MainActivity extends Activity {
     GpsTracker gpsTracker;
     WifiManager wifiManager;
     SharedPreferences appData;
-    ConnectivityManager.NetworkCallback networkCallback;
+//    ConnectivityManager.NetworkCallback networkCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -216,11 +217,8 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
 
-        // 네트워크 감지 중단
-        stopNetworkDetection();
-
         // GPS 감지 종료
-        gpsTracker.stopGps();
+//        gpsTracker.stopGps();
     }
 
     /**
@@ -433,164 +431,15 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 외출/귀가 시 서버로 SSID, STATE 전송(POST)
-     */
-    private void sendWifiStatus() {
-        JsonObject userinfo = new JsonObject();
-        userinfo.addProperty("id", getCurrentId());
-
-        JsonObject wifiinfo = new JsonObject();
-
-        // wifi_home
-        JsonArray homeWifiList = new JsonArray();
-        String[] data = appData.getString("homeWifiList", "").split(",");
-        for(int i = 0; i < data.length; i+=2) {
-            homeWifiList.add(data[i].substring(1, data[i].length()-1).trim());
-        }
-        wifiinfo.add("wifi_home", homeWifiList);
-
-        // wifi_now
-        wifiinfo.addProperty("wifi_now", currentWifi.getSSID().substring(1, currentWifi.getSSID().length()-1).trim());
-
-        // wifi_stat
-        if(wifiManager.isWifiEnabled())
-            wifiinfo.addProperty("wifi_stat", "on");
-        else
-            wifiinfo.addProperty("wifi_stat", "off");
-
-        // wifi_list
-        JsonArray scanWifiList = new JsonArray();
-        data = getWifiList().split(",");
-        for (String str : data) {
-            scanWifiList.add(str.trim());
-        }
-        wifiinfo.add("wifi_list", scanWifiList);
-
-        JsonObject input = new JsonObject();
-        input.add("userinfo", userinfo);
-        input.add("wifiinfo", wifiinfo);
-
-        RetrofitConnection retrofitConnection = new RetrofitConnection();
-        retrofitConnection.server.changeNetwork(input).enqueue(new Callback<JsonObject>() {
-
-            @Override
-            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                if(response.isSuccessful()) {
-                    Log.d("postTest", "onResponse() - isSuccessful() true");
-                    Log.d("postTest", "response.body(): " + response.body());
-                }
-                else {
-                    Log.d("postTest", "onResponse() - isSuccessful() false");
-                    Log.d("postTest", "response.body(): " + response.body());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<JsonObject> call, Throwable t) {
-                Log.d("postTest", "onFailure()");
-                Log.d("postTest", t.toString());
-            }
-
-        });
-    }
-
-    /**
      * 네트워크 감지 및 Notification 생성
      */
     private void startNetworkDetection() {
-        final ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        // 마시멜로 버전 이상일 경우
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            NetworkRequest.Builder builder = new NetworkRequest.Builder();
-
-            networkCallback = new ConnectivityManager.NetworkCallback() {
-                @Override
-                public void onAvailable(Network network) {
-                    // 디바이스의 Wi-Fi 연결 상태 가져오기
-                    getWifiInformation();
-
-                    // 네트워크에 연결됐을 때 Wi-Fi 기능의 On/Off 상태 여부로 네트워크 판단
-                    switch(wifiManager.getWifiState()) {
-                        // Wi-Fi가 꺼져있거나 꺼지는 중이지만 네트워크가 연결된 경우 셀룰러 데이터로 연결된 경우라고 가정
-                        case WifiManager.WIFI_STATE_DISABLED:
-                        case WifiManager.WIFI_STATE_DISABLING:
-                            createNotification("네트워크 알림", "외출: 셀룰러 데이터로 연결되었습니다.");
-                            sendWifiStatus();
-                            break;
-
-                        // Wi-Fi가 켜져있는 경우
-                        case WifiManager.WIFI_STATE_ENABLED: {
-                            // 연결중이던 Wi-Fi가 신호 세기가 약해져서 셀룰러 데이터로 연결된 경우
-                            if(currentWifi.getRssi() < -80) {
-                                createNotification("네트워크 알림", "외출: 셀룰러 데이터로 연결되었습니다.");
-                                sendWifiStatus();
-                            }
-                            // Wi-Fi 세기가 충분한 경우
-                            else {
-                                // 연결된 Wi-Fi가 Home Wi-Fi인 경우
-                                if(isHomeWifi(currentWifi.getBSSID())) {
-                                    createNotification("네트워크 알림", "귀가: Wi-fi(" + currentWifi.getSSID() + ")로 연결되었습니다.");
-                                    sendWifiStatus();
-                                }
-                                // 연결된 Wi-Fi가 Home Wi-Fi가 아닌 경우
-                                else {
-                                    createNotification("네트워크 알림", "외출: Wi-fi(" + currentWifi.getSSID() + ")로 연결되었습니다.");
-                                    sendWifiStatus();
-                                }
-                            }
-
-                            break;
-                        }
-
-                        default:
-                            createNotification("네트워크 알림", "오류가 발생하였습니다.");
-                    }
-                }
-            };
-
-            cm.registerNetworkCallback(builder.build(), networkCallback);
+        Intent intent = new Intent(getApplicationContext(), NetworkService.class);
+        if(Build.VERSION.SDK_INT >= 26) {
+            startForegroundService(intent);
+        } else {
+            startService(intent);
         }
-        // 마시멜로 버전 이하일 경우
-        else {
-            createNotification("시스템 알림", "지원하지 않는 API 버전입니다.");
-        }
-    }
-
-    /**
-     * 네트워크 감지 종료
-     */
-    private void stopNetworkDetection() {
-        ConnectivityManager cm = (ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        // 마시멜로 버전 이상일 경우
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            cm.unregisterNetworkCallback(networkCallback);
-        }
-        // 마시멜로 버전 이하일 경우
-        else { }
-    }
-
-    /**
-     * Notification 생성
-     */
-    private void createNotification(String title, String text) {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "network")
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(title)
-                .setContentText(text)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(true);
-
-        NotificationManager notificationManager = (NotificationManager)getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
-        // 오레오 버전 이상일 경우
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            notificationManager.createNotificationChannel(new NotificationChannel("network", "네트워크 알림", NotificationManager.IMPORTANCE_HIGH));
-        }
-        // 오레오 버전 이하일 경우 Notification Channel 사용하지 않는 방식으로 구현해야 함
-        else { }
-
-        notificationManager.notify(1, builder.build());
     }
 
     /**
@@ -598,24 +447,6 @@ public class MainActivity extends Activity {
      */
     public static String getCurrentId() {
         return currentId;
-    }
-
-    /**
-     * 연결된 Wi-Fi가 Home Wi-Fi인지 판단
-     * @param BSSID 연결된 Wi-Fi의 BSSID 값
-     * @return boolean Home Wi-Fi면 true 반환, 아니면 false 반환
-     */
-    public boolean isHomeWifi(String BSSID) {
-        String data = appData.getString("homeWifiList", "");
-        String[] wifiList = data.split(",");
-
-        for(int i = 1; i < wifiList.length; i+=2) {
-            if(wifiList[i].equals(BSSID)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -646,8 +477,8 @@ public class MainActivity extends Activity {
         // 검색된 Wi-Fi가 1개 이상일 경우
         else {
             scanWifiList.setText("");
-            for(String scan : scanWifi) {
-                for(int i = 0; i < homeWifi.length; i+=2) {
+            for(int i = 0; i < homeWifi.length; i+=2) {
+                for(String scan : scanWifi) {
                     if(homeWifi[i].length() == 0)
                         break;
 
